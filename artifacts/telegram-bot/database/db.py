@@ -8,15 +8,46 @@ class Base(DeclarativeBase):
     pass
 
 
-def _get_db_url() -> str:
-    url = os.environ.get("DATABASE_URL", "")
-    if not url:
+def _get_db_url() -> tuple[str, dict]:
+    """Return (cleaned_url, connect_args) for asyncpg, stripping sslmode query param.
+
+    asyncpg does not accept sslmode= as a URL query parameter.
+    We use urllib.parse to safely rebuild the query string so we don't
+    accidentally corrupt other params, then map sslmode → ssl connect_arg
+    with full certificate verification kept intact.
+    """
+    from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
+
+    raw = os.environ.get("DATABASE_URL", "")
+    if not raw:
         raise RuntimeError("DATABASE_URL environment variable is not set")
-    if url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    return url
+
+    # Normalise scheme for SQLAlchemy + asyncpg
+    if raw.startswith("postgresql://"):
+        raw = raw.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif raw.startswith("postgres://"):
+        raw = raw.replace("postgres://", "postgresql+asyncpg://", 1)
+
+    parsed = urlparse(raw)
+    params = parse_qs(parsed.query, keep_blank_values=True)
+
+    # Extract sslmode before stripping it (asyncpg rejects it as a query param)
+    sslmode_values = params.pop("sslmode", [])
+    sslmode = sslmode_values[0] if sslmode_values else ""
+
+    # Rebuild query string without sslmode
+    clean_query = urlencode({k: v[0] for k, v in params.items()})
+    clean_parsed = parsed._replace(query=clean_query)
+    url = urlunparse(clean_parsed)
+
+    # Map sslmode → ssl connect_arg with full verification (no CERT_NONE)
+    connect_args: dict = {}
+    if sslmode in ("require", "verify-ca", "verify-full"):
+        connect_args["ssl"] = True   # asyncpg uses Python's default SSL ctx (CERT_REQUIRED)
+    elif sslmode == "prefer":
+        connect_args["ssl"] = "prefer"  # asyncpg supports this string value
+
+    return url, connect_args
 
 
 engine = None
@@ -26,12 +57,14 @@ AsyncSessionLocal = None
 def get_engine():
     global engine
     if engine is None:
+        url, connect_args = _get_db_url()
         engine = create_async_engine(
-            _get_db_url(),
+            url,
             echo=False,
             pool_size=10,
             max_overflow=20,
             pool_pre_ping=True,
+            connect_args=connect_args,
         )
     return engine
 

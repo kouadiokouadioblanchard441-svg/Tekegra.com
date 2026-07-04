@@ -29,8 +29,11 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    can_use = await svc.can_use_free_signal(db_user)
-    if not can_use:
+    await call.message.edit_text("⏳ *Analyse IA Mines en cours...*", parse_mode="Markdown")
+    await asyncio.sleep(2)
+
+    allowed, remaining = await svc.try_consume_free_signal(db_user)
+    if not allowed:
         text = (
             f"⛔ *Limite journalière atteinte*\n\n"
             f"{SEP}\n"
@@ -44,11 +47,7 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Limite atteinte")
         return
 
-    await call.message.edit_text("⏳ *Analyse IA Mines en cours...*", parse_mode="Markdown")
-    await asyncio.sleep(2)
-
     signal = generate_mines_signal(is_premium=False)
-    remaining = await svc.consume_free_signal(db_user)
     await svc.save_signal(user.id, "mines", signal, is_premium=False)
 
     text = format_mines_signal(

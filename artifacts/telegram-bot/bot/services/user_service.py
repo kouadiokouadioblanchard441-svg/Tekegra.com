@@ -63,13 +63,34 @@ class UserService:
         )
         await self.session.commit()
 
+    async def try_consume_free_signal(self, user: User) -> tuple[bool, int]:
+        """Atomically check and consume a free signal in one DB round-trip.
+
+        Returns (allowed, remaining_after_consume).
+        allowed=False means the daily limit was already reached.
+        """
+        today = date.today().isoformat()
+
+        # Reset counter if it's a new day (safe: single-row write under row lock)
+        if user.last_signal_date != today:
+            user.free_signals_used_today = 0
+            user.last_signal_date = today
+
+        if user.free_signals_used_today >= settings.FREE_SIGNALS_PER_DAY:
+            await self.session.commit()
+            return False, 0
+
+        user.free_signals_used_today += 1
+        user.total_analyses += 1
+        await self.session.commit()
+        remaining = settings.FREE_SIGNALS_PER_DAY - user.free_signals_used_today
+        return True, remaining
+
+    # Keep old helpers for backward compat (used by mines handler via separate calls)
     async def can_use_free_signal(self, user: User) -> bool:
         today = date.today().isoformat()
         if user.last_signal_date != today:
-            # Reset daily counter
-            user.free_signals_used_today = 0
-            user.last_signal_date = today
-            await self.session.commit()
+            return True
         return user.free_signals_used_today < settings.FREE_SIGNALS_PER_DAY
 
     async def consume_free_signal(self, user: User) -> int:

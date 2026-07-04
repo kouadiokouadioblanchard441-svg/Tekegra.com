@@ -18,7 +18,7 @@ from loguru import logger
 from config import settings
 from database.db import init_db
 from bot.handlers import get_main_router
-from bot.middlewares import ThrottlingMiddleware, DbSessionMiddleware
+from bot.middlewares import ThrottlingMiddleware, DbSessionMiddleware, BanCheckMiddleware
 
 
 def configure_logging():
@@ -48,12 +48,13 @@ async def main():
 
     logger.info(f"🚀 Starting {settings.BOT_NAME}...")
 
-    # Initialize database
+    # Initialize database — required; fail fast if unavailable
     try:
         await init_db()
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}")
-        logger.warning("⚠️ Bot will run without database persistence")
+        logger.error("Bot cannot start without a database. Check DATABASE_URL.")
+        sys.exit(1)
 
     # Create bot and dispatcher
     bot = Bot(
@@ -63,8 +64,12 @@ async def main():
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
 
-    # Register middlewares (order matters)
+    # Register middlewares (order matters):
+    # 1. DB session injected first so later middlewares can use it
+    # 2. Ban check before throttling (no need to rate-limit banned users)
+    # 3. Throttling last, applied only to legitimate users
     dp.update.middleware(DbSessionMiddleware())
+    dp.update.middleware(BanCheckMiddleware())
     dp.update.middleware(ThrottlingMiddleware(rate=settings.THROTTLE_RATE))
 
     # Include all routers

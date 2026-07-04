@@ -33,9 +33,12 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    # Check daily limit
-    can_use = await svc.can_use_free_signal(db_user)
-    if not can_use:
+    # Show loading animation first, then atomically check+consume
+    await call.message.edit_text("⏳ *Analyse IA en cours...*", parse_mode="Markdown")
+    await asyncio.sleep(2)
+
+    allowed, remaining = await svc.try_consume_free_signal(db_user)
+    if not allowed:
         text = (
             f"⛔ *Limite journalière atteinte*\n\n"
             f"{SEP}\n"
@@ -51,12 +54,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Limite atteinte")
         return
 
-    # Show loading animation
-    await call.message.edit_text("⏳ *Analyse IA en cours...*", parse_mode="Markdown")
-    await asyncio.sleep(2)
-
     signal = generate_luckyjet_signal(is_premium=False)
-    remaining = await svc.consume_free_signal(db_user)
     await svc.save_signal(user.id, "luckyjet", signal, is_premium=False)
 
     text = format_luckyjet_signal(
