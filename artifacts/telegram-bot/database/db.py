@@ -87,9 +87,15 @@ async def get_session():
 
 
 async def init_db():
-    """Create all tables if they don't exist."""
+    """Create all tables and apply lightweight schema migrations."""
     from . import models  # noqa: F401
+    from sqlalchemy import text
     eng = get_engine()
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Idempotent migrations: add columns that may not exist yet in older DBs
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+            "approval_status VARCHAR(20) NOT NULL DEFAULT 'approved'"
+        ))
     logger.info("✅ Database tables initialized")

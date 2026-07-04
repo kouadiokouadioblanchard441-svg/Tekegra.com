@@ -1,4 +1,4 @@
-"""Lucky Jet signal and analysis handlers."""
+"""Lucky Jet signal and analysis handlers — with petite/grosse cote and auto-delete."""
 import asyncio
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
@@ -9,8 +9,11 @@ from bot.services.user_service import UserService
 from bot.utils.formatters import (
     format_luckyjet_signal, format_luckyjet_analysis, format_countdown
 )
+from bot.utils.message_cleaner import schedule_delete
 from bot.keyboards.luckyjet import (
-    luckyjet_menu_keyboard, luckyjet_after_signal_keyboard, luckyjet_after_premium_keyboard
+    luckyjet_menu_keyboard,
+    luckyjet_after_signal_keyboard,
+    luckyjet_after_premium_keyboard,
 )
 from bot.keyboards.premium import premium_locked_keyboard
 from config import settings
@@ -21,8 +24,9 @@ router = Router()
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 
-@router.callback_query(F.data == "lj:signal_free")
+@router.callback_query(F.data.startswith("lj:signal_free:"))
 async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
+    cote_type = call.data.split(":")[-1]  # "petite" or "grosse"
     user = call.from_user
     svc = UserService(session)
     db_user = await svc.get_or_create(
@@ -33,8 +37,11 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    # Show loading animation first, then atomically check+consume
-    await call.message.edit_text("⏳ *Analyse IA en cours...*", parse_mode="Markdown")
+    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
+    await call.message.edit_text(
+        f"⏳ *Analyse IA Lucky Jet [{label}] en cours...*",
+        parse_mode="Markdown",
+    )
     await asyncio.sleep(2)
 
     allowed, remaining = await svc.try_consume_free_signal(db_user)
@@ -46,15 +53,14 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
             f"│◉ Limite : *{settings.FREE_SIGNALS_PER_DAY} signaux/jour*\n"
             f"│◉ Renouvellement : minuit UTC\n"
             f"{SEP}\n\n"
-            f"⭐ Passe en *Premium* pour des signaux illimités !"
+            "⭐ Passe en *Premium* pour des signaux illimités !"
         )
-        from bot.keyboards.premium import premium_locked_keyboard
         await call.message.edit_text(text, parse_mode="Markdown",
                                      reply_markup=premium_locked_keyboard())
         await call.answer("⛔ Limite atteinte")
         return
 
-    signal = generate_luckyjet_signal(is_premium=False)
+    signal = generate_luckyjet_signal(is_premium=False, cote_type=cote_type)
     await svc.save_signal(user.id, "luckyjet", signal, is_premium=False)
 
     text = format_luckyjet_signal(
@@ -63,21 +69,28 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         assurance=signal["assurance"],
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=False,
+        cote_type=cote_type,
     )
-    text += f"\n\n🎯 Signaux restants aujourd'hui : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*"
+    text += f"\n\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*"
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
     await call.message.edit_text(
         text,
         parse_mode="Markdown",
-        reply_markup=luckyjet_after_signal_keyboard(settings.BOT_AFFILIATE_LINK),
+        reply_markup=luckyjet_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
+
+    # Auto-delete 2 minutes after game time
+    schedule_delete(call.message.chat.id, call.message.message_id,
+                    delete_in_seconds=signal["countdown"] + 120)
+
     await call.answer("✅ Signal généré !")
-    logger.info(f"Free LJ signal generated for user {user.id}")
+    logger.info(f"Free LJ {cote_type} signal for user {user.id}")
 
 
-@router.callback_query(F.data == "lj:signal_premium")
+@router.callback_query(F.data.startswith("lj:signal_premium:"))
 async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
+    cote_type = call.data.split(":")[-1]
     user = call.from_user
     svc = UserService(session)
     db_user = await svc.get_or_create(
@@ -90,16 +103,13 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
 
     if not db_user.is_premium:
         text = (
-            f"🔒 *Signal Premium — Accès restreint*\n\n"
+            f"🔒 *Signal Premium Lucky Jet — Accès restreint*\n\n"
             f"{SEP}\n"
-            f"│◉ Cette fonctionnalité est réservée\n"
-            f"│   aux membres *Premium*\n"
-            f"{SEP}\n\n"
-            f"⭐ Avantages Premium :\n"
+            f"│◉ Cette fonctionnalité est réservée aux membres *Premium*\n"
             f"│◉ {settings.PREMIUM_SIGNALS_PER_DAY} signaux/jour\n"
-            f"│◉ Cotes ultra-élevées (jusqu'à 25x+)\n"
+            f"│◉ Grosses cotes jusqu'à 25x+ 🚀\n"
             f"│◉ Analyses IA avancées\n"
-            f"│◉ Priorité de traitement"
+            f"{SEP}"
         )
         await call.message.edit_text(
             text, parse_mode="Markdown",
@@ -108,13 +118,14 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         await call.answer("🔒 Premium requis")
         return
 
-    # Show premium loading
+    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     await call.message.edit_text(
-        "⏳ *Analyse IA premium en cours...*", parse_mode="Markdown"
+        f"⏳ *Analyse IA premium Lucky Jet [{label}]...*",
+        parse_mode="Markdown",
     )
     await asyncio.sleep(2.5)
 
-    signal = generate_luckyjet_signal(is_premium=True)
+    signal = generate_luckyjet_signal(is_premium=True, cote_type=cote_type)
     await svc.consume_premium_signal(db_user)
     await svc.save_signal(user.id, "luckyjet", signal, is_premium=True)
 
@@ -124,32 +135,36 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         assurance=signal["assurance"],
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=True,
+        cote_type=cote_type,
     )
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
     await call.message.edit_text(
         text,
         parse_mode="Markdown",
-        reply_markup=luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK),
+        reply_markup=luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
+
+    schedule_delete(call.message.chat.id, call.message.message_id,
+                    delete_in_seconds=signal["countdown"] + 120)
+
     await call.answer("⭐ Signal Premium généré !")
-    logger.info(f"Premium LJ signal generated for user {user.id}")
+    logger.info(f"Premium LJ {cote_type} signal for user {user.id}")
 
 
 @router.callback_query(F.data == "lj:analyse")
-async def cb_analyse(call: CallbackQuery, session: AsyncSession):
-    await call.message.edit_text("⏳ *Analyse IA en cours...*", parse_mode="Markdown")
+async def cb_analyse(call: CallbackQuery):
+    await call.message.edit_text("⏳ *Analyse IA Lucky Jet...*", parse_mode="Markdown")
     await asyncio.sleep(1.5)
 
-    signal = generate_luckyjet_signal(is_premium=False)
+    signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
     text = format_luckyjet_analysis(
         heure=signal["heure"],
         niveau=signal["niveau"],
         risque=signal["risque"],
     )
     await call.message.edit_text(
-        text,
-        parse_mode="Markdown",
+        text, parse_mode="Markdown",
         reply_markup=luckyjet_menu_keyboard(),
     )
     await call.answer()
@@ -174,8 +189,9 @@ async def cb_history(call: CallbackQuery, session: AsyncSession):
             data = r.signal_data
             badge = "⭐" if r.is_premium else "🎯"
             ts = r.created_at.strftime("%d/%m %H:%M")
+            ct = data.get("cote_type", "auto")
             lines.append(
-                f"│{badge} *{ts}* — Cote: {data.get('cote', '?')} | Assurance: {data.get('assurance', '?')}"
+                f"│{badge} *{ts}* — {data.get('cote', '?')} [{ct}]"
             )
         lines.append(SEP)
         text = "\n".join(lines)

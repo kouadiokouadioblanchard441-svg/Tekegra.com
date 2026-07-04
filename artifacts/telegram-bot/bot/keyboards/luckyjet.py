@@ -1,11 +1,16 @@
+"""Lucky Jet inline keyboards."""
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [
-            InlineKeyboardButton(text="🚀 Signal", callback_data="lj:signal_free"),
-            InlineKeyboardButton(text="⭐ Signal Premium", callback_data="lj:signal_premium"),
+            InlineKeyboardButton(text="🎯 Petite Cote (gratuit)", callback_data="lj:signal_free:petite"),
+            InlineKeyboardButton(text="💰 Grosse Cote (gratuit)", callback_data="lj:signal_free:grosse"),
+        ],
+        [
+            InlineKeyboardButton(text="⭐ Petite Cote Premium", callback_data="lj:signal_premium:petite"),
+            InlineKeyboardButton(text="⭐ Grosse Cote Premium", callback_data="lj:signal_premium:grosse"),
         ],
         [
             InlineKeyboardButton(text="📊 Analyse IA", callback_data="lj:analyse"),
@@ -18,27 +23,41 @@ def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def luckyjet_after_signal_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
+def luckyjet_after_signal_keyboard(
+    affiliate_link: str = "",
+    cote_type: str = "petite",
+) -> InlineKeyboardMarkup:
     buttons = []
     if affiliate_link:
         buttons.append([
             InlineKeyboardButton(text="🎰 Créer un compte 1WIN ↗", url=affiliate_link),
         ])
+    label = "🎯 Petite Cote" if cote_type == "petite" else "💰 Grosse Cote"
     buttons.append([
-        InlineKeyboardButton(text="🚀 Nouveau signal", callback_data="lj:signal_free"),
+        InlineKeyboardButton(
+            text=f"🔄 Nouveau signal {label}",
+            callback_data=f"lj:signal_free:{cote_type}",
+        ),
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:luckyjet"),
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def luckyjet_after_premium_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
+def luckyjet_after_premium_keyboard(
+    affiliate_link: str = "",
+    cote_type: str = "petite",
+) -> InlineKeyboardMarkup:
     buttons = []
     if affiliate_link:
         buttons.append([
             InlineKeyboardButton(text="🎰 Créer un compte 1WIN ↗", url=affiliate_link),
         ])
+    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     buttons.append([
-        InlineKeyboardButton(text="⭐ Nouveau signal premium", callback_data="lj:signal_premium"),
+        InlineKeyboardButton(
+            text=f"⭐ Nouveau signal premium {label}",
+            callback_data=f"lj:signal_premium:{cote_type}",
+        ),
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:luckyjet"),
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -33,12 +33,15 @@ class UserService:
                 first_name=first_name,
                 last_name=last_name,
                 language_code=language_code or "fr",
+                approval_status="pending",  # new users must be approved
             )
             self.session.add(user)
             await self.session.commit()
             await self.session.refresh(user)
-            logger.info(f"New user registered: {telegram_id} (@{username})")
+            user._is_new = True  # signal to start handler
+            logger.info(f"New user registered (pending): {telegram_id} (@{username})")
         else:
+            user._is_new = False
             # Update activity
             user.last_active = datetime.utcnow()
             if username:
@@ -63,15 +66,42 @@ class UserService:
         )
         await self.session.commit()
 
+    async def approve_user(self, telegram_id: int) -> bool:
+        """Approve a pending user. Returns True if user was found."""
+        result = await self.session.execute(
+            update(User)
+            .where(User.telegram_id == telegram_id)
+            .values(approval_status="approved")
+            .returning(User.telegram_id)
+        )
+        await self.session.commit()
+        return result.scalar_one_or_none() is not None
+
+    async def reject_user(self, telegram_id: int) -> bool:
+        """Reject a user. Returns True if user was found."""
+        result = await self.session.execute(
+            update(User)
+            .where(User.telegram_id == telegram_id)
+            .values(approval_status="rejected")
+            .returning(User.telegram_id)
+        )
+        await self.session.commit()
+        return result.scalar_one_or_none() is not None
+
+    async def get_pending_users(self) -> list:
+        result = await self.session.execute(
+            select(User).where(User.approval_status == "pending")
+            .order_by(User.registered_at.asc())
+        )
+        return result.scalars().all()
+
     async def try_consume_free_signal(self, user: User) -> tuple[bool, int]:
         """Atomically check and consume a free signal in one DB round-trip.
 
         Returns (allowed, remaining_after_consume).
-        allowed=False means the daily limit was already reached.
         """
         today = date.today().isoformat()
 
-        # Reset counter if it's a new day (safe: single-row write under row lock)
         if user.last_signal_date != today:
             user.free_signals_used_today = 0
             user.last_signal_date = today
@@ -86,7 +116,6 @@ class UserService:
         remaining = settings.FREE_SIGNALS_PER_DAY - user.free_signals_used_today
         return True, remaining
 
-    # Keep old helpers for backward compat (used by mines handler via separate calls)
     async def can_use_free_signal(self, user: User) -> bool:
         today = date.today().isoformat()
         if user.last_signal_date != today:
@@ -155,8 +184,20 @@ class UserService:
         result = await self.session.execute(select(func.count(SignalHistory.id)))
         return result.scalar_one()
 
+    async def get_pending_count(self) -> int:
+        result = await self.session.execute(
+            select(func.count(User.id)).where(User.approval_status == "pending")
+        )
+        return result.scalar_one()
+
     async def get_all_users(self) -> list:
-        result = await self.session.execute(select(User).where(User.is_banned == False))
+        """Returns approved, non-banned users (for broadcasts)."""
+        result = await self.session.execute(
+            select(User).where(
+                User.is_banned == False,
+                User.approval_status == "approved",
+            )
+        )
         return result.scalars().all()
 
     async def set_premium(self, telegram_id: int, is_premium: bool) -> None:

@@ -1,4 +1,4 @@
-"""Signal generation engine for Lucky Jet and Mines."""
+"""Signal generation engine for Lucky Jet, Rocket Queen and Mines."""
 import random
 from datetime import datetime, timedelta
 import pytz
@@ -7,35 +7,45 @@ import pytz
 def _get_signal_time() -> str:
     """Generate a realistic future time for the signal."""
     now = datetime.now(pytz.UTC)
-    offset = random.randint(30, 300)  # 30s to 5 minutes ahead
+    offset = random.randint(30, 300)  # 30 s to 5 minutes ahead
     signal_time = now + timedelta(seconds=offset)
     return signal_time.strftime("%H:%M:%S")
 
 
 def _get_countdown() -> int:
-    """Seconds until next signal is available."""
+    """Seconds until the predicted game round starts (used for auto-delete)."""
     return random.randint(30, 180)
 
 
-def _get_luckyjet_cote(is_premium: bool) -> str:
-    """Generate a multiplier. Premium gets higher potential odds."""
-    if is_premium:
-        # Premium: wider range, potentially huge multipliers
-        choices = [
-            round(random.uniform(1.5, 3.0), 2),
-            round(random.uniform(3.0, 8.0), 2),
-            round(random.uniform(8.0, 25.0), 2),
-        ]
-        weights = [40, 40, 20]
+def _cote_for_type(cote_type: str, is_premium: bool, max_grosse: float) -> str:
+    """Return a formatted multiplier string based on cote type."""
+    if cote_type == "petite":
+        # Small, frequent multipliers
+        val = round(random.uniform(1.10, 2.80 if is_premium else 2.50), 2)
+    elif cote_type == "grosse":
+        # Big, rarer multipliers
+        min_val = 3.00
+        val = round(random.uniform(min_val, max_grosse), 2)
     else:
-        # Free: more conservative
-        choices = [
-            round(random.uniform(1.5, 2.5), 2),
-            round(random.uniform(2.5, 5.0), 2),
-        ]
-        weights = [60, 40]
-    cote = random.choices(choices, weights=weights)[0]
-    return f"{cote}x"
+        # auto — legacy balanced behaviour
+        if is_premium:
+            buckets = [
+                round(random.uniform(1.50, 3.0), 2),
+                round(random.uniform(3.0, 8.0), 2),
+                round(random.uniform(8.0, 25.0), 2),
+            ]
+            val = random.choices(buckets, weights=[40, 40, 20])[0]
+        else:
+            buckets = [
+                round(random.uniform(1.50, 2.5), 2),
+                round(random.uniform(2.5, 5.0), 2),
+            ]
+            val = random.choices(buckets, weights=[60, 40])[0]
+    return f"{val}x"
+
+
+def _assurance_for_type(cote_type: str) -> str:
+    return "1.20X+" if cote_type == "petite" else "2.00X+"
 
 
 def _get_niveau() -> str:
@@ -43,21 +53,18 @@ def _get_niveau() -> str:
 
 
 def _get_risque(niveau: str) -> str:
-    mapping = {
-        "Faible": "Prudente",
-        "Moyen": "Modérée",
-        "Élevé": "Agressive",
-    }
-    return mapping.get(niveau, "Modérée")
+    return {"Faible": "Prudente", "Moyen": "Modérée", "Élevé": "Agressive"}.get(niveau, "Modérée")
 
 
-def generate_luckyjet_signal(is_premium: bool = False) -> dict:
+# ─── Lucky Jet ───────────────────────────────────────────────────────────────
+
+def generate_luckyjet_signal(is_premium: bool = False, cote_type: str = "auto") -> dict:
     """Generate a Lucky Jet prediction signal."""
     heure = _get_signal_time()
-    cote = _get_luckyjet_cote(is_premium)
+    cote = _cote_for_type(cote_type, is_premium, max_grosse=25.0 if is_premium else 15.0)
     niveau = _get_niveau()
     risque = _get_risque(niveau)
-    assurance = "1.50X+"
+    assurance = _assurance_for_type(cote_type)
     countdown = _get_countdown()
 
     return {
@@ -68,8 +75,34 @@ def generate_luckyjet_signal(is_premium: bool = False) -> dict:
         "risque": risque,
         "countdown": countdown,
         "is_premium": is_premium,
+        "cote_type": cote_type,
     }
 
+
+# ─── Rocket Queen ─────────────────────────────────────────────────────────────
+
+def generate_rocketqueen_signal(is_premium: bool = False, cote_type: str = "auto") -> dict:
+    """Generate a Rocket Queen prediction signal."""
+    heure = _get_signal_time()
+    cote = _cote_for_type(cote_type, is_premium, max_grosse=50.0 if is_premium else 20.0)
+    niveau = _get_niveau()
+    risque = _get_risque(niveau)
+    assurance = _assurance_for_type(cote_type)
+    countdown = _get_countdown()
+
+    return {
+        "heure": heure,
+        "cote": cote,
+        "assurance": assurance,
+        "niveau": niveau,
+        "risque": risque,
+        "countdown": countdown,
+        "is_premium": is_premium,
+        "cote_type": cote_type,
+    }
+
+
+# ─── Mines ────────────────────────────────────────────────────────────────────
 
 def generate_mines_signal(is_premium: bool = False) -> dict:
     """Generate a Mines game analysis signal with a full 5x5 grid."""
@@ -86,7 +119,6 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
     countdown = _get_countdown()
     safe_tiles = 25 - mines
 
-    # Generate 5x5 grid with safe and mine positions
     grid = _generate_mines_grid(mines_count=mines, is_premium=is_premium)
 
     return {
@@ -96,8 +128,8 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
         "risque": risque,
         "countdown": countdown,
         "is_premium": is_premium,
-        "grid": grid,          # 5x5 list of lists with "⭐" | "🟦" | "💣"
-        "mine_positions": [    # flat list of 0-24 indices that are mines
+        "grid": grid,
+        "mine_positions": [
             i for i, cell in enumerate(sum(grid, []))
             if cell == "💣"
         ],
@@ -105,31 +137,17 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
 
 
 def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
-    """Build a 5x5 grid.
-
-    Layout:
-      ⭐  — recommended safe tile (AI prediction, revealed)
-      💣  — mine position (revealed so user can avoid it)
-      🟦  — neutral closed tile (safe but not highlighted)
-
-    The bot always reveals ALL mine positions and a set of top safe spots,
-    so the user knows exactly where to click.
-    """
-    GRID = 25  # 5×5
-
-    # Shuffle all tile indices to assign roles randomly
+    """Build a 5×5 prediction grid for Mines."""
+    GRID = 25
     positions = list(range(GRID))
     random.shuffle(positions)
 
     mine_positions = set(positions[:mines_count])
     safe_positions = positions[mines_count:]
 
-    # How many safe tiles to highlight with ⭐
-    # Premium gets more highlighted tiles (clearer predictions)
     highlight_count = min(len(safe_positions), 5 if is_premium else 3)
     highlighted = set(safe_positions[:highlight_count])
 
-    # Build flat array then reshape to 5×5
     flat: list[str] = []
     for idx in range(GRID):
         if idx in mine_positions:
@@ -139,5 +157,4 @@ def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
         else:
             flat.append("🟦")
 
-    # Reshape to 5 rows × 5 cols
     return [flat[r * 5: r * 5 + 5] for r in range(5)]

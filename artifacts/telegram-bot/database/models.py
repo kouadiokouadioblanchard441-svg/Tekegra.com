@@ -18,6 +18,9 @@ class User(Base):
     language_code = Column(String(10), default="fr")
     is_premium = Column(Boolean, default=False)
     is_banned = Column(Boolean, default=False)
+    # "pending" | "approved" | "rejected"
+    # server_default="approved" so existing DB rows stay approved after migration
+    approval_status = Column(String(20), default="pending", server_default="approved", nullable=False)
     registered_at = Column(DateTime, default=datetime.utcnow)
     last_active = Column(DateTime, default=datetime.utcnow)
 

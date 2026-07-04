@@ -5,7 +5,7 @@ def main_menu_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
     buttons = [
         [
             InlineKeyboardButton(text="🎯 Lucky Jet", callback_data="menu:luckyjet"),
-            InlineKeyboardButton(text="💣 Mines", callback_data="menu:mines"),
+            InlineKeyboardButton(text="👑 Rocket Queen", callback_data="menu:rocketqueen"),
         ],
         [
             InlineKeyboardButton(text="👤 Mon profil", callback_data="menu:profile"),

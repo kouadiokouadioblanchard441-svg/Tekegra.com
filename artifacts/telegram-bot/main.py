@@ -19,6 +19,7 @@ from config import settings
 from database.db import init_db
 from bot.handlers import get_main_router
 from bot.middlewares import ThrottlingMiddleware, DbSessionMiddleware, BanCheckMiddleware
+from bot.utils.message_cleaner import start_cleaner
 
 
 def configure_logging():
@@ -74,6 +75,9 @@ async def main():
 
     # Include all routers
     dp.include_router(get_main_router())
+
+    # Start background task — auto-deletes signal messages after game time + 2 min
+    start_cleaner(bot)
 
     # Start polling
     logger.info("✅ Bot is running. Press Ctrl+C to stop.")

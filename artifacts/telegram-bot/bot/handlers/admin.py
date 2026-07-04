@@ -1,4 +1,4 @@
-"""Admin panel handlers."""
+"""Admin panel handlers — stats, user management, broadcast, approve/reject."""
 import asyncio
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
@@ -11,7 +11,12 @@ from bot.filters.admin_filter import IsAdmin
 from bot.services.user_service import UserService
 from bot.services.premium_service import PremiumService
 from bot.utils.formatters import format_admin_stats
-from bot.keyboards.admin import admin_keyboard, admin_premium_action_keyboard, admin_confirm_broadcast_keyboard
+from bot.keyboards.admin import (
+    admin_keyboard,
+    admin_user_action_keyboard,
+    admin_approve_reject_keyboard,
+    admin_confirm_broadcast_keyboard,
+)
 from config import settings
 from loguru import logger
 
@@ -27,9 +32,7 @@ class BroadcastState(StatesGroup):
     confirm = State()
 
 
-class PremiumManageState(StatesGroup):
-    waiting_user_id = State()
-
+# ── Panel entry ──────────────────────────────────────────────────────────────
 
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
@@ -44,6 +47,8 @@ async def cmd_admin(message: Message):
     await message.answer(text, parse_mode="Markdown", reply_markup=admin_keyboard())
 
 
+# ── Stats ─────────────────────────────────────────────────────────────────────
+
 @router.callback_query(F.data == "admin:stats")
 async def cb_admin_stats(call: CallbackQuery, session: AsyncSession):
     svc = UserService(session)
@@ -51,37 +56,176 @@ async def cb_admin_stats(call: CallbackQuery, session: AsyncSession):
     premium = await svc.get_premium_users_count()
     active = await svc.get_active_today()
     signals = await svc.get_total_signals()
+    pending = await svc.get_pending_count()
 
     text = format_admin_stats(
         total_users=total,
         premium_users=premium,
         active_today=active,
         total_signals=signals,
+        pending_users=pending,
     )
     await call.message.edit_text(text, parse_mode="Markdown", reply_markup=admin_keyboard())
     await call.answer()
 
+
+# ── Users list ────────────────────────────────────────────────────────────────
 
 @router.callback_query(F.data == "admin:users")
 async def cb_admin_users(call: CallbackQuery, session: AsyncSession):
     svc = UserService(session)
     total = await svc.get_total_users()
     premium = await svc.get_premium_users_count()
+    pending = await svc.get_pending_count()
 
     text = (
         f"👥 *GESTION UTILISATEURS*\n\n"
         f"{SEP}\n"
         f"│◉ Total : *{total}*\n"
-        f"│◉ Premium : *{premium}*\n"
-        f"│◉ Gratuits : *{total - premium}*\n"
+        f"│◉ Approuvés Premium : *{premium}*\n"
+        f"│◉ En attente : *{pending}* ⏳\n"
+        f"│◉ Gratuits approuvés : *{total - premium - pending}*\n"
         f"{SEP}\n\n"
-        f"Pour gérer un utilisateur spécifique,\n"
-        f"utilisez la commande :\n"
-        f"`/admin_user <telegram_id>`"
+        "Pour gérer un utilisateur :\n"
+        "`/admin_user <telegram_id>`"
     )
     await call.message.edit_text(text, parse_mode="Markdown", reply_markup=admin_keyboard())
     await call.answer()
 
+
+# ── Pending users list ────────────────────────────────────────────────────────
+
+@router.callback_query(F.data == "admin:pending")
+async def cb_admin_pending(call: CallbackQuery, session: AsyncSession):
+    svc = UserService(session)
+    pending = await svc.get_pending_users()
+
+    if not pending:
+        text = (
+            f"⏳ *UTILISATEURS EN ATTENTE*\n\n"
+            f"{SEP}\n"
+            f"│◉ Aucun utilisateur en attente ✅\n"
+            f"{SEP}"
+        )
+        await call.message.edit_text(text, parse_mode="Markdown", reply_markup=admin_keyboard())
+        await call.answer()
+        return
+
+    lines = [f"⏳ *UTILISATEURS EN ATTENTE* ({len(pending)})\n{SEP}"]
+    for u in pending[:10]:  # show max 10
+        name = f"{u.first_name or ''} {u.last_name or ''}".strip() or "—"
+        lines.append(
+            f"│◉ `{u.telegram_id}` — {name} (@{u.username or '—'})\n"
+            f"│   [Inscrip. {u.registered_at.strftime('%d/%m %H:%M')}]"
+        )
+    lines.append(SEP)
+    lines.append("\nUtilise `/admin_user <id>` pour agir sur un utilisateur.")
+
+    await call.message.edit_text(
+        "\n".join(lines), parse_mode="Markdown", reply_markup=admin_keyboard()
+    )
+    await call.answer()
+
+
+# ── Approve / Reject ──────────────────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("admin:approve:"))
+async def cb_approve_user(call: CallbackQuery, session: AsyncSession, bot: Bot):
+    try:
+        user_id = int(call.data.split(":")[-1])
+    except (ValueError, IndexError):
+        await call.answer("❌ Données invalides", show_alert=True)
+        return
+    svc = UserService(session)
+    found = await svc.approve_user(user_id)
+
+    if not found:
+        await call.answer("❌ Utilisateur introuvable", show_alert=True)
+        return
+
+    await call.message.edit_text(
+        f"✅ *Accès approuvé* pour `{user_id}`",
+        parse_mode="Markdown",
+        reply_markup=admin_keyboard(),
+    )
+    await call.answer("✅ Approuvé !")
+    logger.info(f"Admin {call.from_user.id} approved user {user_id}")
+
+    # Notify the approved user
+    try:
+        await bot.send_message(
+            chat_id=user_id,
+            text=(
+                f"🎉 *Accès approuvé !*\n\n"
+                f"{SEP}\n"
+                f"│◉ Votre accès au bot a été *approuvé* ✅\n"
+                f"│◉ Utilise /start pour accéder au menu.\n"
+                f"{SEP}\n\n"
+                f"🎁 Code promo 1WIN : `{settings.BOT_PROMO_CODE}`"
+            ),
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        logger.warning(f"Could not notify user {user_id} of approval: {e}")
+
+
+@router.callback_query(F.data.startswith("admin:reject:"))
+async def cb_reject_user(call: CallbackQuery, session: AsyncSession, bot: Bot):
+    try:
+        user_id = int(call.data.split(":")[-1])
+    except (ValueError, IndexError):
+        await call.answer("❌ Données invalides", show_alert=True)
+        return
+    svc = UserService(session)
+    found = await svc.reject_user(user_id)
+
+    if not found:
+        await call.answer("❌ Utilisateur introuvable", show_alert=True)
+        return
+
+    await call.message.edit_text(
+        f"❌ *Accès refusé* pour `{user_id}`",
+        parse_mode="Markdown",
+        reply_markup=admin_keyboard(),
+    )
+    await call.answer("❌ Refusé")
+    logger.info(f"Admin {call.from_user.id} rejected user {user_id}")
+
+    try:
+        await bot.send_message(
+            chat_id=user_id,
+            text=(
+                f"🚫 *Accès refusé*\n\n"
+                f"Votre demande d'accès n'a pas été approuvée.\n"
+                f"Contactez le support si vous pensez qu'il s'agit d'une erreur."
+            ),
+            parse_mode="Markdown",
+        )
+    except Exception:
+        pass
+
+
+# ── Ban ───────────────────────────────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("admin:ban:"))
+async def cb_ban_user(call: CallbackQuery, session: AsyncSession):
+    try:
+        user_id = int(call.data.split(":")[-1])
+    except (ValueError, IndexError):
+        await call.answer("❌ Données invalides", show_alert=True)
+        return
+    svc = UserService(session)
+    await svc.ban_user(user_id)
+    await call.message.edit_text(
+        f"🚫 *Utilisateur banni* : `{user_id}`",
+        parse_mode="Markdown",
+        reply_markup=admin_keyboard(),
+    )
+    await call.answer("🚫 Banni")
+    logger.info(f"Admin {call.from_user.id} banned user {user_id}")
+
+
+# ── Admin user details (/admin_user <id>) ─────────────────────────────────────
 
 @router.message(Command("admin_user"))
 async def cmd_admin_user(message: Message, session: AsyncSession):
@@ -101,27 +245,50 @@ async def cmd_admin_user(message: Message, session: AsyncSession):
         await message.answer("❌ Utilisateur introuvable")
         return
 
+    status_icon = {"approved": "✅", "pending": "⏳", "rejected": "🚫"}.get(
+        user.approval_status, "?"
+    )
     text = (
         f"👤 *Utilisateur*\n{SEP}\n"
         f"│◉ ID : `{user.telegram_id}`\n"
         f"│◉ Nom : {user.first_name or '—'}\n"
         f"│◉ @{user.username or '—'}\n"
+        f"│◉ Accès : {status_icon} {user.approval_status}\n"
         f"│◉ Premium : {'✅' if user.is_premium else '❌'}\n"
         f"│◉ Analyses : {user.total_analyses}\n"
         f"│◉ Banni : {'🚫' if user.is_banned else '✅ Non'}\n"
         f"{SEP}"
     )
     await message.answer(text, parse_mode="Markdown",
-                         reply_markup=admin_premium_action_keyboard(user_id))
+                         reply_markup=admin_user_action_keyboard(user_id))
+
+
+# ── Premium management ────────────────────────────────────────────────────────
+
+@router.callback_query(F.data == "admin:premium")
+async def cb_admin_premium_menu(call: CallbackQuery):
+    await call.message.edit_text(
+        f"⭐ *Gérer Premium*\n\n{SEP}\n"
+        "Utilise `/admin_user <telegram_id>` pour activer / désactiver le premium\n"
+        "d'un utilisateur spécifique.\n"
+        f"{SEP}",
+        parse_mode="Markdown",
+        reply_markup=admin_keyboard(),
+    )
+    await call.answer()
 
 
 @router.callback_query(F.data.startswith("admin:prem_on:"))
 async def cb_activate_premium(call: CallbackQuery, session: AsyncSession):
-    user_id = int(call.data.split(":")[-1])
+    try:
+        user_id = int(call.data.split(":")[-1])
+    except (ValueError, IndexError):
+        await call.answer("❌ Données invalides", show_alert=True)
+        return
     svc = PremiumService(session)
     await svc.activate_premium(user_id, days=30, payment_method="admin")
     await call.message.edit_text(
-        f"✅ *Premium activé* (30 jours) pour l'utilisateur `{user_id}`",
+        f"✅ *Premium activé* (30 jours) pour `{user_id}`",
         parse_mode="Markdown", reply_markup=admin_keyboard()
     )
     await call.answer("✅ Premium activé")
@@ -130,22 +297,28 @@ async def cb_activate_premium(call: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data.startswith("admin:prem_off:"))
 async def cb_deactivate_premium(call: CallbackQuery, session: AsyncSession):
-    user_id = int(call.data.split(":")[-1])
+    try:
+        user_id = int(call.data.split(":")[-1])
+    except (ValueError, IndexError):
+        await call.answer("❌ Données invalides", show_alert=True)
+        return
     svc = PremiumService(session)
     await svc.deactivate_premium(user_id)
     await call.message.edit_text(
-        f"❌ *Premium désactivé* pour l'utilisateur `{user_id}`",
+        f"❌ *Premium désactivé* pour `{user_id}`",
         parse_mode="Markdown", reply_markup=admin_keyboard()
     )
     await call.answer("❌ Premium désactivé")
 
+
+# ── Broadcast ─────────────────────────────────────────────────────────────────
 
 @router.callback_query(F.data == "admin:broadcast")
 async def cb_broadcast_start(call: CallbackQuery, state: FSMContext):
     await state.set_state(BroadcastState.waiting_message)
     await call.message.edit_text(
         "📢 *Diffusion de message*\n\n"
-        "Envoyez le message à diffuser à tous les utilisateurs.\n"
+        "Envoyez le message à diffuser à tous les utilisateurs approuvés.\n"
         "Vous pouvez utiliser le format Markdown.\n\n"
         "Envoyez /cancel pour annuler.",
         parse_mode="Markdown",
@@ -179,7 +352,7 @@ async def cb_broadcast_confirm(call: CallbackQuery, state: FSMContext, bot: Bot,
     users = await svc.get_all_users()
 
     await call.message.edit_text(
-        f"📢 *Diffusion en cours...*\n{len(users)} utilisateurs",
+        f"📢 *Diffusion en cours...*\n{len(users)} utilisateurs approuvés",
         parse_mode="Markdown",
     )
 
@@ -189,7 +362,7 @@ async def cb_broadcast_confirm(call: CallbackQuery, state: FSMContext, bot: Bot,
         try:
             await bot.send_message(user.telegram_id, text, parse_mode="Markdown")
             sent += 1
-            await asyncio.sleep(0.05)  # Rate limiting
+            await asyncio.sleep(0.05)
         except Exception:
             failed += 1
 
@@ -199,7 +372,7 @@ async def cb_broadcast_confirm(call: CallbackQuery, state: FSMContext, bot: Bot,
         f"│◉ Échecs : *{failed}*",
         parse_mode="Markdown", reply_markup=admin_keyboard()
     )
-    logger.info(f"Broadcast sent by {call.from_user.id}: {sent} success, {failed} failed")
+    logger.info(f"Broadcast by {call.from_user.id}: {sent} ok, {failed} failed")
 
 
 @router.callback_query(F.data == "admin:broadcast_cancel")
@@ -211,22 +384,25 @@ async def cb_broadcast_cancel(call: CallbackQuery, state: FSMContext):
     await call.answer("❌ Annulée")
 
 
+# ── Logs ──────────────────────────────────────────────────────────────────────
+
 @router.callback_query(F.data == "admin:logs")
 async def cb_admin_logs(call: CallbackQuery):
     import os
     log_files = []
-    log_dir = "logs"
-    if os.path.exists(log_dir):
-        log_files = os.listdir(log_dir)
+    if os.path.exists("logs"):
+        log_files = os.listdir("logs")
     text = (
         f"📋 *LOGS*\n\n{SEP}\n"
         f"│◉ Fichiers : {len(log_files)}\n"
         f"{SEP}\n\n"
-        "Les logs sont disponibles dans `/logs/`"
+        "Les logs sont dans `/logs/`"
     )
     await call.message.edit_text(text, parse_mode="Markdown", reply_markup=admin_keyboard())
     await call.answer()
 
+
+# ── Cancel ────────────────────────────────────────────────────────────────────
 
 @router.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
