@@ -1,45 +1,63 @@
-# [Project name]
+# Lucky Jet AI Bot
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Bot Telegram de prédiction Lucky Jet et Mines avec IA, multilingue, premium et panneau admin.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `cd artifacts/telegram-bot && python main.py` — démarrer le bot Telegram
+- Bot workflow: **Telegram Bot**
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Python 3.12 + Aiogram 3 + FastAPI
+- PostgreSQL + SQLAlchemy async
+- Traductions dans `/locales/` (8 langues)
+- Signaux générés via algorithme IA simulé
 
-## Where things live
+## Architecture
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+```
+artifacts/telegram-bot/
+├── main.py                  — Point d'entrée
+├── config/settings.py       — Configuration via env vars
+├── database/                — Modèles SQLAlchemy + init
+│   ├── models.py            — User, SignalHistory, Premium, etc.
+│   └── db.py                — Engine + session factory
+├── bot/
+│   ├── handlers/            — start, menu, luckyjet, mines, profile, premium, admin
+│   ├── keyboards/           — Claviers inline Telegram
+│   ├── middlewares/         — Throttling anti-spam + DB session
+│   ├── filters/             — Filtre admin
+│   ├── services/            — signals.py, user_service.py, premium_service.py
+│   └── utils/               — formatters.py (style Unicode) + cache.py
+└── locales/                 — fr, en, ar, es, ru, pt, tr, hi
+```
 
-## Architecture decisions
+## Secrets requis
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- `TELEGRAM_BOT_TOKEN` — Token du bot (via @BotFather)
+- `ADMIN_IDS` — IDs Telegram des admins (virgule-séparé)
+- `DATABASE_URL` — Auto-géré par Replit
 
-## Product
+## Variables d'environnement
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- `BOT_PROMO_CODE` — Code promo 1WIN
+- `BOT_AFFILIATE_LINK` — Lien affiliation 1WIN
+- `FREE_SIGNALS_PER_DAY` — Signaux gratuits/jour (défaut: 6)
+- `PREMIUM_SIGNALS_PER_DAY` — Signaux premium/jour (défaut: 9)
+
+## Commandes du bot
+
+`/start`, `/menu`, `/luckyjet`, `/mines`, `/profile`, `/history`, `/premium`, `/help`, `/language`, `/settings`, `/admin` (admin only)
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Bot en français par défaut, multilingue (8 langues)
+- Style Unicode identique aux captures d'écran
+- Architecture modulaire prête pour scaling
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Sans `TELEGRAM_BOT_TOKEN`, le bot refuse de démarrer
+- La DB est initialisée automatiquement au démarrage
+- L'admin doit avoir son ID dans `ADMIN_IDS`

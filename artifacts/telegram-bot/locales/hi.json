@@ -1,0 +1,14 @@
+{
+  "lang_name": "हिंदी",
+  "welcome": "🚀 Lucky Jet AI Bot में आपका स्वागत है {name}!",
+  "menu_title": "🎯 मुख्य मेनू — एक विकल्प चुनें:",
+  "signal": "🚀 सिग्नल",
+  "signal_premium": "⭐ प्रीमियम सिग्नल",
+  "analyse": "📊 AI विश्लेषण",
+  "history": "📈 इतिहास",
+  "back": "⬅ वापस",
+  "analysing": "⏳ AI विश्लेषण चल रहा है...",
+  "countdown": "🔄 अगला सिग्नल *{seconds}* सेकंड में उपलब्ध होगा।",
+  "create_account": "🎰 1WIN खाता बनाएं ↗",
+  "select_language": "🌍 कृपया अपनी भाषा चुनें:"
+}
