@@ -1,4 +1,4 @@
-"""Mines signal and analysis handlers."""
+"""Mines signal and analysis handlers — with interactive 5×5 grid."""
 import asyncio
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
@@ -8,6 +8,7 @@ from bot.services.signals import generate_mines_signal
 from bot.services.user_service import UserService
 from bot.utils.formatters import format_mines_signal, format_countdown
 from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard
+from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
 from config import settings
 from loguru import logger
@@ -15,6 +16,45 @@ from loguru import logger
 router = Router()
 
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
+
+
+def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -> str:
+    badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
+    lines = [
+        f"💣 *MINES PREDICTION* [{badge}]",
+        SEP,
+        f"│◉ *Pièges* : {signal['mines']} mines 💣",
+        f"│◉ *Cases sûres* : {signal['safe_tiles']} / 25",
+        f"│◉ *Niveau* : {signal['niveau']}",
+        f"│◉ *Risque* : {signal['risque']} ✅",
+        SEP,
+        "",
+        "⭐ *Cases recommandées* — Clique sur les étoiles !",
+        "💣 *Cases à éviter* — Ne clique pas sur les bombes !",
+        "",
+    ]
+    if remaining is not None and not is_premium:
+        lines.append(f"🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*")
+    lines.append(format_countdown(signal["countdown"]))
+    lines.append(f"\ncode promo: `{settings.BOT_PROMO_CODE}`")
+    return "\n".join(lines)
+
+
+async def _show_mines_grid(
+    call: CallbackQuery,
+    signal: dict,
+    is_premium: bool,
+    remaining: int | None = None,
+):
+    """Send the analysis header then edit into the 5×5 grid keyboard."""
+    header = _grid_header(signal, is_premium, remaining)
+    grid = signal.get("grid", [])
+    keyboard = mines_grid_keyboard(
+        grid=grid,
+        is_premium=is_premium,
+        affiliate_link=settings.BOT_AFFILIATE_LINK,
+    )
+    await call.message.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
 
 
 @router.callback_query(F.data == "mines:signal_free")
@@ -40,7 +80,7 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
             f"│◉ Limite : *{settings.FREE_SIGNALS_PER_DAY} signaux/jour*\n"
             f"│◉ Renouvellement : minuit UTC\n"
             f"{SEP}\n\n"
-            f"⭐ Passe en *Premium* pour des signaux illimités !"
+            "⭐ Passe en *Premium* pour des signaux illimités !"
         )
         await call.message.edit_text(text, parse_mode="Markdown",
                                      reply_markup=premium_locked_keyboard())
@@ -49,24 +89,9 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
 
     signal = generate_mines_signal(is_premium=False)
     await svc.save_signal(user.id, "mines", signal, is_premium=False)
-
-    text = format_mines_signal(
-        mines=signal["mines"],
-        niveau=signal["niveau"],
-        risque=signal["risque"],
-        promo_code=settings.BOT_PROMO_CODE,
-        is_premium=False,
-    )
-    text += f"\n\n│◉ *Cases sûres* : {signal['safe_tiles']} / 25"
-    text += f"\n\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*"
-    text += f"\n\n{format_countdown(signal['countdown'])}"
-
-    await call.message.edit_text(
-        text, parse_mode="Markdown",
-        reply_markup=mines_after_signal_keyboard(settings.BOT_AFFILIATE_LINK),
-    )
-    await call.answer("✅ Signal Mines généré !")
-    logger.info(f"Free Mines signal for user {user.id}")
+    await _show_mines_grid(call, signal, is_premium=False, remaining=remaining)
+    await call.answer("✅ Grille Mines générée !")
+    logger.info(f"Free Mines grid for user {user.id} — {signal['mines']} mines")
 
 
 @router.callback_query(F.data == "mines:signal_premium")
@@ -86,8 +111,10 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
             f"🔒 *Signal Premium Mines — Accès restreint*\n\n"
             f"{SEP}\n"
             f"│◉ Réservé aux membres *Premium*\n"
+            f"│◉ Plus de cases ⭐ révélées (5 vs 3)\n"
+            f"│◉ Moins de pièges, plus de gains\n"
             f"{SEP}\n\n"
-            f"⭐ Avantages : mines réduites, cases sûres optimisées"
+            "⭐ Passe Premium pour débloquer !"
         )
         await call.message.edit_text(text, parse_mode="Markdown",
                                      reply_markup=premium_locked_keyboard())
@@ -100,22 +127,22 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
     signal = generate_mines_signal(is_premium=True)
     await svc.consume_premium_signal(db_user)
     await svc.save_signal(user.id, "mines", signal, is_premium=True)
+    await _show_mines_grid(call, signal, is_premium=True)
+    await call.answer("⭐ Grille Premium Mines générée !")
+    logger.info(f"Premium Mines grid for user {user.id} — {signal['mines']} mines")
 
-    text = format_mines_signal(
-        mines=signal["mines"],
-        niveau=signal["niveau"],
-        risque=signal["risque"],
-        promo_code=settings.BOT_PROMO_CODE,
-        is_premium=True,
-    )
-    text += f"\n\n│◉ *Cases sûres* : {signal['safe_tiles']} / 25"
-    text += f"\n\n{format_countdown(signal['countdown'])}"
 
-    await call.message.edit_text(
-        text, parse_mode="Markdown",
-        reply_markup=mines_after_signal_keyboard(settings.BOT_AFFILIATE_LINK),
-    )
-    await call.answer("⭐ Signal Premium Mines généré !")
+# Tap on a cell — just acknowledge, grid is read-only prediction display
+@router.callback_query(F.data.startswith("mines:cell:"))
+async def cb_cell_tap(call: CallbackQuery):
+    parts = call.data.split(":")
+    cell_type = parts[3] if len(parts) > 3 else "🟦"
+    if cell_type == "⭐":
+        await call.answer("⭐ Case sûre — Clique ici !", show_alert=False)
+    elif cell_type == "💣":
+        await call.answer("💣 Mine ! Évite cette case !", show_alert=True)
+    else:
+        await call.answer("🟦 Case inconnue", show_alert=False)
 
 
 @router.callback_query(F.data == "mines:analyse")
@@ -124,17 +151,7 @@ async def cb_mines_analyse(call: CallbackQuery):
     await asyncio.sleep(1.5)
 
     signal = generate_mines_signal(is_premium=False)
-    text = (
-        f"💣 *MINES ANALYSE*\n"
-        f"{SEP}\n"
-        f"│◉ *Difficulté* : {signal['mines']} mines 💣\n"
-        f"│◉ *Cases sûres* : {signal['safe_tiles']} / 25\n"
-        f"│◉ *Niveau conseillé* : {signal['niveau']}\n"
-        f"│◉ *Gestion du risque* : {signal['risque']} ✅\n"
-        f"{SEP}"
-    )
-    await call.message.edit_text(text, parse_mode="Markdown",
-                                 reply_markup=mines_menu_keyboard())
+    await _show_mines_grid(call, signal, is_premium=False)
     await call.answer()
 
 
@@ -158,7 +175,7 @@ async def cb_mines_history(call: CallbackQuery, session: AsyncSession):
         text = (
             f"📈 *Historique Mines*\n\n{SEP}\n"
             f"│◉ Aucun signal dans l'historique\n{SEP}\n\n"
-            "Génère ton premier signal ! 💣"
+            "Génère ta première grille ! 💣"
         )
     else:
         lines = [f"📈 *Historique Mines* (5 derniers)\n{SEP}"]
@@ -167,7 +184,7 @@ async def cb_mines_history(call: CallbackQuery, session: AsyncSession):
             badge = "⭐" if r.is_premium else "🎯"
             ts = r.created_at.strftime("%d/%m %H:%M")
             lines.append(
-                f"│{badge} *{ts}* — Mines: {data.get('mines', '?')} | Risque: {data.get('risque', '?')}"
+                f"│{badge} *{ts}* — {data.get('mines', '?')} mines | Risque: {data.get('risque', '?')}"
             )
         lines.append(SEP)
         text = "\n".join(lines)

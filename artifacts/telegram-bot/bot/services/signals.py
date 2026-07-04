@@ -72,7 +72,7 @@ def generate_luckyjet_signal(is_premium: bool = False) -> dict:
 
 
 def generate_mines_signal(is_premium: bool = False) -> dict:
-    """Generate a Mines game analysis signal."""
+    """Generate a Mines game analysis signal with a full 5x5 grid."""
     if is_premium:
         mines_options = [1, 2, 3, 5, 10, 15]
         weights = [10, 20, 30, 25, 10, 5]
@@ -84,9 +84,10 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
     niveau = _get_niveau()
     risque = _get_risque(niveau)
     countdown = _get_countdown()
-
-    # Calculate safe tiles based on mines count (5x5 grid = 25 tiles)
     safe_tiles = 25 - mines
+
+    # Generate 5x5 grid with safe and mine positions
+    grid = _generate_mines_grid(mines_count=mines, is_premium=is_premium)
 
     return {
         "mines": mines,
@@ -95,4 +96,48 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
         "risque": risque,
         "countdown": countdown,
         "is_premium": is_premium,
+        "grid": grid,          # 5x5 list of lists with "⭐" | "🟦" | "💣"
+        "mine_positions": [    # flat list of 0-24 indices that are mines
+            i for i, cell in enumerate(sum(grid, []))
+            if cell == "💣"
+        ],
     }
+
+
+def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
+    """Build a 5x5 grid.
+
+    Layout:
+      ⭐  — recommended safe tile (AI prediction, revealed)
+      💣  — mine position (revealed so user can avoid it)
+      🟦  — neutral closed tile (safe but not highlighted)
+
+    The bot always reveals ALL mine positions and a set of top safe spots,
+    so the user knows exactly where to click.
+    """
+    GRID = 25  # 5×5
+
+    # Shuffle all tile indices to assign roles randomly
+    positions = list(range(GRID))
+    random.shuffle(positions)
+
+    mine_positions = set(positions[:mines_count])
+    safe_positions = positions[mines_count:]
+
+    # How many safe tiles to highlight with ⭐
+    # Premium gets more highlighted tiles (clearer predictions)
+    highlight_count = min(len(safe_positions), 5 if is_premium else 3)
+    highlighted = set(safe_positions[:highlight_count])
+
+    # Build flat array then reshape to 5×5
+    flat: list[str] = []
+    for idx in range(GRID):
+        if idx in mine_positions:
+            flat.append("💣")
+        elif idx in highlighted:
+            flat.append("⭐")
+        else:
+            flat.append("🟦")
+
+    # Reshape to 5 rows × 5 cols
+    return [flat[r * 5: r * 5 + 5] for r in range(5)]
