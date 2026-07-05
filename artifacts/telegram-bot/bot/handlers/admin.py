@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.filters.admin_filter import IsAdmin
 from bot.services.user_service import UserService
 from bot.services.premium_service import PremiumService
+from bot.services.settings_service import BotSettingsService
 from bot.utils.formatters import format_admin_stats
 from bot.keyboards.admin import (
     admin_keyboard,
@@ -30,6 +31,10 @@ SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 class BroadcastState(StatesGroup):
     waiting_message = State()
     confirm = State()
+
+
+class BannerState(StatesGroup):
+    waiting_photo = State()
 
 
 # ── Panel entry ──────────────────────────────────────────────────────────────
@@ -382,6 +387,89 @@ async def cb_broadcast_cancel(call: CallbackQuery, state: FSMContext):
         "❌ *Diffusion annulée*", parse_mode="Markdown", reply_markup=admin_keyboard()
     )
     await call.answer("❌ Annulée")
+
+
+# ── Banners ───────────────────────────────────────────────────────────────────
+
+BANNER_KEYS = {
+    "menu_banner":        "📋 Menu principal",
+    "register_banner":    "📝 Page inscription",
+    "game_select_banner": "🎮 Sélection jeu",
+    "luckyjet_banner":    "🎯 Lucky Jet",
+    "mines_banner":       "💣 Mines",
+    "guide_banner":       "📚 Guide",
+}
+
+
+def _banner_keyboard() -> "InlineKeyboardMarkup":
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    rows = [
+        [InlineKeyboardButton(text=label, callback_data=f"admin:set_banner:{key}")]
+        for key, label in BANNER_KEYS.items()
+    ]
+    rows.append([InlineKeyboardButton(text="🔙 Retour", callback_data="admin:stats")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+@router.callback_query(F.data == "admin:banners")
+async def cb_admin_banners(call: CallbackQuery, session: AsyncSession):
+    bss = BotSettingsService(session)
+    lines = [f"🖼 *GESTION DES BANNIÈRES*\n\n{SEP}"]
+    for key, label in BANNER_KEYS.items():
+        val = await bss.get(key)
+        status = "✅ Définie" if val else "❌ Non définie"
+        lines.append(f"│◉ {label} : {status}")
+    lines.append(SEP)
+    lines.append("\nAppuie sur une bannière pour la modifier.")
+    await call.message.edit_text(
+        "\n".join(lines), parse_mode="Markdown", reply_markup=_banner_keyboard()
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("admin:set_banner:"))
+async def cb_set_banner_start(call: CallbackQuery, state: FSMContext):
+    key = call.data.split(":", 2)[-1]
+    label = BANNER_KEYS.get(key, key)
+    await state.set_state(BannerState.waiting_photo)
+    await state.update_data(banner_key=key)
+    await call.message.edit_text(
+        f"🖼 *Modifier la bannière : {label}*\n\n"
+        "Envoie une **photo** pour définir cette bannière.\n"
+        "Envoie /cancel pour annuler.",
+        parse_mode="Markdown",
+    )
+    await call.answer()
+
+
+@router.message(BannerState.waiting_photo, F.photo)
+async def cb_set_banner_photo(message: Message, state: FSMContext, session: AsyncSession):
+    data = await state.get_data()
+    key = data.get("banner_key", "menu_banner")
+    label = BANNER_KEYS.get(key, key)
+
+    # Use the largest photo size
+    file_id = message.photo[-1].file_id
+    bss = BotSettingsService(session)
+    await bss.set(key, file_id)
+    await state.clear()
+
+    await message.answer(
+        f"✅ *Bannière mise à jour !*\n\n│◉ Page : *{label}*\n│◉ Photo enregistrée.",
+        parse_mode="Markdown",
+        reply_markup=admin_keyboard(),
+    )
+    logger.info(f"Admin {message.from_user.id} updated banner '{key}'")
+
+
+@router.callback_query(F.data.startswith("admin:del_banner:"))
+async def cb_del_banner(call: CallbackQuery, session: AsyncSession):
+    key = call.data.split(":", 2)[-1]
+    bss = BotSettingsService(session)
+    await bss.delete(key)
+    await call.answer(f"🗑 Bannière supprimée", show_alert=True)
+    # Refresh banners page
+    await cb_admin_banners(call, session)
 
 
 # ── Logs ──────────────────────────────────────────────────────────────────────

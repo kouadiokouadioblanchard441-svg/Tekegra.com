@@ -215,3 +215,12 @@ class UserService:
             .values(is_banned=True)
         )
         await self.session.commit()
+
+    async def mark_registered(self, telegram_id: int) -> None:
+        """Mark user as having registered on 1WIN with the affiliate link."""
+        await self.session.execute(
+            update(User)
+            .where(User.telegram_id == telegram_id)
+            .values(has_registered=True)
+        )
+        await self.session.commit()

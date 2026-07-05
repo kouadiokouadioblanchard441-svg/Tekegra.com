@@ -1,13 +1,14 @@
-"""Start command handler — welcome, approval gate, language selection."""
+"""Start command handler — welcome with photo banner, approval gate."""
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.services.user_service import UserService
-from bot.utils.formatters import format_welcome
-from bot.keyboards.main_menu import main_menu_keyboard, language_keyboard
+from bot.services.settings_service import BotSettingsService
+from bot.keyboards.main_menu import main_menu_keyboard, language_keyboard, back_to_main_keyboard
 from bot.keyboards.admin import admin_approve_reject_keyboard
+from bot.utils.navigation import send_menu
 from config import settings
 from loguru import logger
 
@@ -53,21 +54,22 @@ async def cmd_start(message: Message, session: AsyncSession):
         last_name=user.last_name,
         language_code=user.language_code,
     )
-    logger.info(f"/start from {user.id} (@{user.username}) — status={db_user.approval_status}, banned={db_user.is_banned}")
+    logger.info(
+        f"/start from {user.id} (@{user.username}) "
+        f"status={db_user.approval_status}, banned={db_user.is_banned}"
+    )
 
-    # ── Banned — check even on /start ─────────────────────────────────────────
+    # ── Banned ────────────────────────────────────────────────────────────────
     if db_user.is_banned:
         await message.answer("🚫 Votre compte est banni.")
         return
 
-    # ── Rejected ─────────────────────────────────────────────────────────────
+    # ── Rejected ──────────────────────────────────────────────────────────────
     if db_user.approval_status == "rejected":
         await message.answer(
-            f"🚫 *Accès refusé*\n\n"
-            f"{SEP}\n"
-            f"│◉ Votre demande d'accès a été *refusée*.\n"
-            f"│◉ Contactez le support si vous pensez\n"
-            f"│   qu'il s'agit d'une erreur.\n"
+            f"🚫 *Accès refusé*\n\n{SEP}\n"
+            "│◉ Votre demande d'accès a été *refusée*.\n"
+            "│◉ Contactez le support si vous pensez qu'il s'agit d'une erreur.\n"
             f"{SEP}",
             parse_mode="Markdown",
         )
@@ -77,11 +79,10 @@ async def cmd_start(message: Message, session: AsyncSession):
     if db_user.approval_status == "pending":
         is_new = getattr(db_user, "_is_new", False)
         await message.answer(
-            f"⏳ *Demande d'accès en cours...*\n\n"
-            f"{SEP}\n"
-            f"│◉ Votre compte est en attente d'approbation.\n"
-            f"│◉ Un admin va examiner votre demande.\n"
-            f"│◉ Vous serez notifié(e) dès l'approbation.\n"
+            f"⏳ *Demande d'accès en cours...*\n\n{SEP}\n"
+            "│◉ Votre compte est en attente d'approbation.\n"
+            "│◉ Un admin va examiner votre demande.\n"
+            "│◉ Vous serez notifié(e) dès l'approbation.\n"
             f"{SEP}\n\n"
             f"🎁 Code promo pour 1WIN : `{settings.BOT_PROMO_CODE}`",
             parse_mode="Markdown",
@@ -90,28 +91,24 @@ async def cmd_start(message: Message, session: AsyncSession):
             await _notify_admins_new_user(message, db_user)
         return
 
-    # ── Approved ──────────────────────────────────────────────────────────────
-    welcome_text = format_welcome(
-        first_name=user.first_name or "Joueur",
-        free_count=settings.FREE_SIGNALS_PER_DAY,
-        premium_count=settings.PREMIUM_SIGNALS_PER_DAY,
-        promo_code=settings.BOT_PROMO_CODE,
-        affiliate_link=settings.BOT_AFFILIATE_LINK,
+    # ── Approved — send main menu with photo ──────────────────────────────────
+    bss = BotSettingsService(session)
+    photo = await bss.get("menu_banner")
+
+    text = (
+        f"🏆 *Bienvenue {user.first_name or 'Joueur'} !* 🎉\n\n"
+        f"◉ *1WIN GAME PREDICTOR* [`{settings.BOT_PROMO_CODE}`]\n\n"
+        f"🔥 Activate the bot now and start winning! 🚀"
     )
-    await message.answer(
-        welcome_text,
-        parse_mode="Markdown",
-        reply_markup=main_menu_keyboard(settings.BOT_AFFILIATE_LINK),
-    )
+    await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
 
 
 @router.message(Command("menu"))
-async def cmd_menu(message: Message):
-    await message.answer(
-        "🎯 *Menu principal* — Choisis une option :",
-        parse_mode="Markdown",
-        reply_markup=main_menu_keyboard(settings.BOT_AFFILIATE_LINK),
-    )
+async def cmd_menu(message: Message, session: AsyncSession):
+    bss = BotSettingsService(session)
+    photo = await bss.get("menu_banner")
+    text = "🎮 *Menu*\n\nChoisis une option ci-dessous 👇"
+    await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
 
 
 @router.message(Command("language"))
@@ -124,45 +121,22 @@ async def cmd_language(message: Message):
 
 
 @router.message(Command("help"))
-async def cmd_help(message: Message):
+async def cmd_help(message: Message, session: AsyncSession):
+    bss = BotSettingsService(session)
+    photo = await bss.get("menu_banner")
     text = (
         "❓ *AIDE — Bot 1WIN Predictions*\n\n"
-        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{SEP}\n"
         "│◉ `/start` — Démarrer le bot\n"
         "│◉ `/menu` — Menu principal\n"
-        "│◉ `/luckyjet` — Signaux Lucky Jet\n"
-        "│◉ `/rocketqueen` — Signaux Rocket Queen\n"
-
         "│◉ `/profile` — Mon profil\n"
         "│◉ `/premium` — Abonnement Premium\n"
-        "│◉ `/history` — Historique des signaux\n"
         "│◉ `/language` — Changer de langue\n"
         "│◉ `/help` — Cette aide\n"
-        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{SEP}\n\n"
         f"🎁 Code promo : `{settings.BOT_PROMO_CODE}`"
     )
-    await message.answer(text, parse_mode="Markdown",
-                         reply_markup=main_menu_keyboard(settings.BOT_AFFILIATE_LINK))
-
-
-@router.message(Command("luckyjet"))
-async def cmd_luckyjet(message: Message):
-    from bot.keyboards.luckyjet import luckyjet_menu_keyboard
-    await message.answer(
-        "🎯 *Lucky Jet* — Choisis une option :",
-        parse_mode="Markdown",
-        reply_markup=luckyjet_menu_keyboard(),
-    )
-
-
-@router.message(Command("rocketqueen"))
-async def cmd_rocketqueen(message: Message):
-    from bot.keyboards.rocketqueen import rocketqueen_menu_keyboard
-    await message.answer(
-        "👑 *Rocket Queen* — Choisis une option :",
-        parse_mode="Markdown",
-        reply_markup=rocketqueen_menu_keyboard(),
-    )
+    await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
 
 
 @router.message(Command("profile"))
@@ -175,18 +149,3 @@ async def cmd_profile(message: Message, session: AsyncSession):
 async def cmd_premium(message: Message):
     from bot.handlers.premium import show_premium
     await show_premium(message)
-
-
-@router.message(Command("history"))
-async def cmd_history(message: Message, session: AsyncSession):
-    from bot.handlers.profile import show_history
-    await show_history(message, session)
-
-
-@router.message(Command("settings"))
-async def cmd_settings(message: Message):
-    await message.answer(
-        "⚙️ *Paramètres*\n\nUtilise le menu ci-dessous pour configurer le bot.",
-        parse_mode="Markdown",
-        reply_markup=language_keyboard(),
-    )

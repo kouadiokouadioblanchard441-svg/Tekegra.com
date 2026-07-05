@@ -18,6 +18,48 @@ router = Router()
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 
+# ── Simplified GET SIGNAL (new menu flow) ─────────────────────────────────────
+@router.callback_query(F.data == "mines:get_signal")
+async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
+    """New simplified mines signal button."""
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+
+    await call.message.edit_text("⏳ *Analyse IA Mines en cours...*", parse_mode="Markdown")
+    await asyncio.sleep(2)
+
+    is_premium = db_user.is_premium
+
+    if is_premium:
+        signal = generate_mines_signal(is_premium=True)
+        await svc.consume_premium_signal(db_user)
+    else:
+        allowed, remaining = await svc.try_consume_free_signal(db_user)
+        if not allowed:
+            text = (
+                f"⛔ *Limite journalière atteinte*\n\n{SEP}\n"
+                f"│◉ Limite : *{settings.FREE_SIGNALS_PER_DAY} signaux/jour*\n"
+                "│◉ Renouvellement : minuit UTC\n"
+                f"{SEP}\n\n⭐ Passe en *Premium* pour des signaux illimités !"
+            )
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+            await call.answer("⛔ Limite atteinte")
+            return
+
+    await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
+    await _show_mines_grid(call, signal, is_premium=is_premium)
+    await call.answer("✅ Grille générée !")
+    logger.info(f"Mines get_signal for user {user.id} (premium={is_premium})")
+
+
 def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -> str:
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
     lines = [

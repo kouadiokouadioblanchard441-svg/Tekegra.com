@@ -24,6 +24,9 @@ class User(Base):
     registered_at = Column(DateTime, default=datetime.utcnow)
     last_active = Column(DateTime, default=datetime.utcnow)
 
+    # Registration on 1WIN (user confirmed they signed up with affiliate link)
+    has_registered = Column(Boolean, default=False, server_default="false")
+
     # Counters
     total_analyses = Column(Integer, default=0)
     free_signals_used_today = Column(Integer, default=0)

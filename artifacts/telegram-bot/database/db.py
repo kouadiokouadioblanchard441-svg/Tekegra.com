@@ -98,4 +98,8 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
             "approval_status VARCHAR(20) NOT NULL DEFAULT 'approved'"
         ))
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+            "has_registered BOOLEAN NOT NULL DEFAULT false"
+        ))
     logger.info("✅ Database tables initialized")

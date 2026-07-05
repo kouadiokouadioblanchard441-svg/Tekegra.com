@@ -24,6 +24,66 @@ router = Router()
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 
+# ── Simplified GET SIGNAL (new menu flow) ─────────────────────────────────────
+@router.callback_query(F.data == "lj:get_signal")
+async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
+    """New simplified signal button — auto cote, free or premium."""
+    from bot.keyboards.main_menu import luckyjet_after_signal_keyboard
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+
+    await call.message.edit_text("⏳ *Analyse IA Lucky Jet en cours...*", parse_mode="Markdown")
+    await asyncio.sleep(2)
+
+    is_premium = db_user.is_premium
+
+    if is_premium:
+        signal = generate_luckyjet_signal(is_premium=True, cote_type="grosse")
+        await svc.consume_premium_signal(db_user)
+    else:
+        allowed, remaining = await svc.try_consume_free_signal(db_user)
+        if not allowed:
+            text = (
+                f"⛔ *Limite journalière atteinte*\n\n{SEP}\n"
+                f"│◉ Limite : *{settings.FREE_SIGNALS_PER_DAY} signaux/jour*\n"
+                "│◉ Renouvellement : minuit UTC\n"
+                f"{SEP}\n\n⭐ Passe en *Premium* pour des signaux illimités !"
+            )
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+            await call.answer("⛔ Limite atteinte")
+            return
+        signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
+
+    await svc.save_signal(user.id, "luckyjet", signal, is_premium=is_premium)
+
+    text = format_luckyjet_signal(
+        heure=signal["heure"],
+        cote=signal["cote"],
+        assurance=signal["assurance"],
+        promo_code=settings.BOT_PROMO_CODE,
+        is_premium=is_premium,
+        cote_type=signal.get("cote_type", "auto"),
+    )
+    text += f"\n\n{format_countdown(signal['countdown'])}"
+
+    await call.message.edit_text(
+        text, parse_mode="Markdown",
+        reply_markup=luckyjet_after_signal_keyboard(),
+    )
+    schedule_delete(call.message.chat.id, call.message.message_id,
+                    delete_in_seconds=signal["countdown"] + 120)
+    await call.answer("✅ Signal généré !")
+    logger.info(f"LJ get_signal for user {user.id} (premium={is_premium})")
+
+
 @router.callback_query(F.data.startswith("lj:signal_free:"))
 async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
     cote_type = call.data.split(":")[-1]  # "petite" or "grosse"

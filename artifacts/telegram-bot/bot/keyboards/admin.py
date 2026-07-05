@@ -14,7 +14,7 @@ def admin_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="📢 Diffusion", callback_data="admin:broadcast"),
-            InlineKeyboardButton(text="📋 Logs", callback_data="admin:logs"),
+            InlineKeyboardButton(text="🖼 Bannières", callback_data="admin:banners"),
         ],
         [
             InlineKeyboardButton(text="🏠 Menu principal", callback_data="menu:main"),
