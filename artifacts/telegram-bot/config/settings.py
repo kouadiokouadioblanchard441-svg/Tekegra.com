@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
 
+    # Channels (links to join, shown in guide)
+    CHANNEL_1_LINK: str = ""   # e.g. https://t.me/moncanal1
+    CHANNEL_1_NAME: str = "📢 Canal Officiel"
+    CHANNEL_2_LINK: str = ""   # e.g. https://t.me/moncanal2
+    CHANNEL_2_NAME: str = "📢 Canal Signaux VIP"
+
     # Anti-spam
     THROTTLE_RATE: float = 0.5  # seconds between requests
 

@@ -55,3 +55,39 @@ def back_to_main_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="⬅ Retour au menu", callback_data="menu:main")]
     ])
+
+
+def guide_keyboard(
+    affiliate_link: str = "",
+    channel_1_link: str = "",
+    channel_1_name: str = "📢 Canal Officiel",
+    channel_2_link: str = "",
+    channel_2_name: str = "📢 Canal Signaux VIP",
+) -> InlineKeyboardMarkup:
+    """Guide page keyboard: channel joins → inscription → recharge → back."""
+    buttons = []
+
+    # Channel buttons (only shown if configured)
+    if channel_1_link:
+        buttons.append([
+            InlineKeyboardButton(text=channel_1_name, url=channel_1_link),
+        ])
+    if channel_2_link:
+        buttons.append([
+            InlineKeyboardButton(text=channel_2_name, url=channel_2_link),
+        ])
+
+    # 1WIN action buttons
+    if affiliate_link:
+        buttons.append([
+            InlineKeyboardButton(text="📝 INSCRIPTION ↗", url=affiliate_link),
+        ])
+        buttons.append([
+            InlineKeyboardButton(text="💳 RECHARGER ↗", url=affiliate_link),
+        ])
+
+    # Back
+    buttons.append([
+        InlineKeyboardButton(text="⬅ Retour au menu", callback_data="menu:main"),
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
