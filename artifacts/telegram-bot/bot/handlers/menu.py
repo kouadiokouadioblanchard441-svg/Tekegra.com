@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.keyboards.main_menu import main_menu_keyboard, language_keyboard
 from bot.keyboards.luckyjet import luckyjet_menu_keyboard
 from bot.keyboards.mines import mines_menu_keyboard
-from bot.keyboards.rocketqueen import rocketqueen_menu_keyboard
 from bot.keyboards.premium import premium_keyboard
 from bot.services.user_service import UserService
 from config import settings
@@ -44,15 +43,6 @@ async def cb_mines_menu(call: CallbackQuery):
     )
     await call.answer()
 
-
-@router.callback_query(F.data == "menu:rocketqueen")
-async def cb_rocketqueen_menu(call: CallbackQuery):
-    await call.message.edit_text(
-        "👑 *Rocket Queen* — Choisis ton type de signal :",
-        parse_mode="Markdown",
-        reply_markup=rocketqueen_menu_keyboard(),
-    )
-    await call.answer()
 
 
 @router.callback_query(F.data == "menu:premium")
