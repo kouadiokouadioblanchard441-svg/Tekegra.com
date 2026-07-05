@@ -132,6 +132,7 @@ async def cmd_help(message: Message):
         "│◉ `/menu` — Menu principal\n"
         "│◉ `/luckyjet` — Signaux Lucky Jet\n"
         "│◉ `/rocketqueen` — Signaux Rocket Queen\n"
+
         "│◉ `/profile` — Mon profil\n"
         "│◉ `/premium` — Abonnement Premium\n"
         "│◉ `/history` — Historique des signaux\n"
