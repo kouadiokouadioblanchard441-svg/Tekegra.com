@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm install && pnpm --filter @workspace/admin-panel run build",
+  "outputDirectory": "artifacts/admin-panel/dist/public",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@5"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
