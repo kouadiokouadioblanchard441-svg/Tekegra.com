@@ -73,12 +73,12 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         cote_type=signal.get("cote_type", "auto"),
         mise_seconde=signal.get("mise_seconde", 0.0),
     )
-    text += f"\n\n{format_countdown(signal['countdown'])}"
 
     await call.message.edit_text(
         text, parse_mode="Markdown",
         reply_markup=luckyjet_after_signal_keyboard(),
     )
+    await call.message.answer(format_countdown(signal["countdown"]), parse_mode="Markdown")
     schedule_delete(call.message.chat.id, call.message.message_id,
                     delete_in_seconds=signal["countdown"] + 120)
     await call.answer("✅ Signal généré !")
@@ -133,13 +133,15 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         cote_type=cote_type,
         mise_seconde=signal.get("mise_seconde", 0.0),
     )
-    text += f"\n\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*"
-    text += f"\n\n{format_countdown(signal['countdown'])}"
 
     await call.message.edit_text(
         text,
         parse_mode="Markdown",
         reply_markup=luckyjet_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+    )
+    await call.message.answer(
+        f"{format_countdown(signal['countdown'])}\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*",
+        parse_mode="Markdown",
     )
 
     # Auto-delete 2 minutes after game time
@@ -200,13 +202,13 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         cote_type=cote_type,
         mise_seconde=signal.get("mise_seconde", 0.0),
     )
-    text += f"\n\n{format_countdown(signal['countdown'])}"
 
     await call.message.edit_text(
         text,
         parse_mode="Markdown",
         reply_markup=luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
+    await call.message.answer(format_countdown(signal["countdown"]), parse_mode="Markdown")
 
     schedule_delete(call.message.chat.id, call.message.message_id,
                     delete_in_seconds=signal["countdown"] + 120)

@@ -19,18 +19,14 @@ def format_luckyjet_signal(
     cote_type: str = "auto",
     mise_seconde: float = 0.0,
 ) -> str:
-    badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
-    ct_label = f" | {_cote_label(cote_type)}" if cote_type != "auto" else ""
-    seconde_line = f"│◉➤ *PLACER À* : *{mise_seconde}s* après le départ ⚡\n" if mise_seconde else ""
+    seconde_line = f"|●>PLACER À : {mise_seconde}s après le départ ⚡\n" if mise_seconde else ""
     return (
-        f"🚀 *LUCKY JET PREDICTION* [{badge}{ct_label}]\n"
-        f"{SEP}\n"
-        f"│◉➤ *HEURE* : {heure} ⏰\n"
+        f"🚀 *LUCKY JET PREDICTION*\n\n"
+        f"|●>HEURE : {heure} ⏰\n"
         f"{seconde_line}"
-        f"│◉➤ *COTE* : {cote} 🚀\n"
-        f"│◉➤ *ASSURANCE* : {assurance} ✅\n"
-        f"{SEP}\n"
-        f"🎁 Code promo : `{promo_code}`"
+        f"|●>COTE : {cote} 🚀\n"
+        f"|●>ASSURANCE : {assurance} ✅\n\n"
+        f"code promo: {promo_code}"
     )
 
 
@@ -114,7 +110,7 @@ def format_aviator_signal(
 
 
 def format_countdown(seconds: int) -> str:
-    return f"⏱ Signal valable pendant *{seconds}* secondes — joue rapidement !"
+    return f"🔄 Prochain signal disponible dans *{seconds}* secondes."
 
 
 def format_profile(
