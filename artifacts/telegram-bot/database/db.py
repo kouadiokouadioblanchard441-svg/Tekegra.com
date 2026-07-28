@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 from loguru import logger
 import os
 
@@ -65,9 +66,11 @@ def get_engine():
         engine = create_async_engine(
             url,
             echo=False,
-            pool_size=10,
-            max_overflow=20,
-            pool_pre_ping=True,
+            # NullPool is required when using Supabase's PgBouncer transaction
+            # pooler (port 6543): it disables SQLAlchemy's own connection pool
+            # so asyncpg never reuses connections across transactions, which
+            # avoids DuplicatePreparedStatementError even with statement_cache_size=0.
+            poolclass=NullPool,
             connect_args=connect_args,
         )
     return engine
