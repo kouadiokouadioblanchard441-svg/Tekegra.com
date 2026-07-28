@@ -130,7 +130,7 @@ async function getUser(telegramId: number, res: any) {
 }
 
 router.post("/admin/users/:telegramId/approve", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.telegramId, 10);
+  const id = parseInt(String(req.params.telegramId), 10);
   if (isNaN(id)) { res.status(400).json({ error: "Bad id" }); return; }
   const user = await getUser(id, res);
   if (!user) return;
@@ -139,7 +139,7 @@ router.post("/admin/users/:telegramId/approve", requireAuth, async (req, res) =>
 });
 
 router.post("/admin/users/:telegramId/reject", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.telegramId, 10);
+  const id = parseInt(String(req.params.telegramId), 10);
   if (isNaN(id)) { res.status(400).json({ error: "Bad id" }); return; }
   const user = await getUser(id, res);
   if (!user) return;
@@ -148,7 +148,7 @@ router.post("/admin/users/:telegramId/reject", requireAuth, async (req, res) => 
 });
 
 router.post("/admin/users/:telegramId/ban", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.telegramId, 10);
+  const id = parseInt(String(req.params.telegramId), 10);
   if (isNaN(id)) { res.status(400).json({ error: "Bad id" }); return; }
   const user = await getUser(id, res);
   if (!user) return;
@@ -157,7 +157,7 @@ router.post("/admin/users/:telegramId/ban", requireAuth, async (req, res) => {
 });
 
 router.post("/admin/users/:telegramId/unban", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.telegramId, 10);
+  const id = parseInt(String(req.params.telegramId), 10);
   if (isNaN(id)) { res.status(400).json({ error: "Bad id" }); return; }
   const user = await getUser(id, res);
   if (!user) return;
@@ -166,7 +166,7 @@ router.post("/admin/users/:telegramId/unban", requireAuth, async (req, res) => {
 });
 
 router.post("/admin/users/:telegramId/premium", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.telegramId, 10);
+  const id = parseInt(String(req.params.telegramId), 10);
   if (isNaN(id)) { res.status(400).json({ error: "Bad id" }); return; }
   const user = await getUser(id, res);
   if (!user) return;
