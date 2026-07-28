@@ -6,9 +6,12 @@ from .mines import router as mines_router
 from .profile import router as profile_router
 from .premium import router as premium_router
 from .admin import router as admin_router
+from .subscription import router as subscription_router
 
 def get_main_router() -> Router:
     router = Router()
+    # subscription router first so sub:check is always reachable
+    router.include_router(subscription_router)
     router.include_router(start_router)
     router.include_router(menu_router)
     router.include_router(luckyjet_router)

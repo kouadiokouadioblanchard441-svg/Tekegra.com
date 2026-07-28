@@ -40,6 +40,24 @@ class Settings(BaseSettings):
     CHANNEL_2_LINK: str = ""   # e.g. https://t.me/moncanal2
     CHANNEL_2_NAME: str = "📢 Canal Signaux VIP"
 
+    # Channel IDs for membership enforcement (integers, e.g. -1001234567890)
+    # Leave empty to disable the subscription gate for that slot.
+    CHANNEL_1_ID: str = ""
+    CHANNEL_2_ID: str = ""
+
+    @property
+    def required_channel_ids(self) -> list[int]:
+        """Return the list of channel IDs that users must join."""
+        ids = []
+        for raw in (self.CHANNEL_1_ID, self.CHANNEL_2_ID):
+            raw = raw.strip()
+            if raw:
+                try:
+                    ids.append(int(raw))
+                except ValueError:
+                    pass
+        return ids
+
     # Anti-spam
     THROTTLE_RATE: float = 0.5  # seconds between requests
 

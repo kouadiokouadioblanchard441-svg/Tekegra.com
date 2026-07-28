@@ -18,7 +18,7 @@ from loguru import logger
 from config import settings
 from database.db import init_db
 from bot.handlers import get_main_router
-from bot.middlewares import ThrottlingMiddleware, DbSessionMiddleware, BanCheckMiddleware
+from bot.middlewares import ThrottlingMiddleware, DbSessionMiddleware, BanCheckMiddleware, ChannelCheckMiddleware
 from bot.utils.message_cleaner import start_cleaner
 
 
@@ -67,10 +67,12 @@ async def main():
 
     # Register middlewares (order matters):
     # 1. DB session injected first so later middlewares can use it
-    # 2. Ban check before throttling (no need to rate-limit banned users)
-    # 3. Throttling last, applied only to legitimate users
+    # 2. Ban check — blocks banned/rejected/pending users
+    # 3. Channel check — blocks users who haven't joined required channels
+    # 4. Throttling last, applied only to legitimate users
     dp.update.middleware(DbSessionMiddleware())
     dp.update.middleware(BanCheckMiddleware())
+    dp.update.middleware(ChannelCheckMiddleware())
     dp.update.middleware(ThrottlingMiddleware(rate=settings.THROTTLE_RATE))
 
     # Include all routers
