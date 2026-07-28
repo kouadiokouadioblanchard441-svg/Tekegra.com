@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter"
 import { Users, LayoutDashboard, Settings, Radio, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button } from "./ui/button"
+import { Button } from "../ui/button"
 
 export function Sidebar() {
   const [location, setLocation] = useLocation()

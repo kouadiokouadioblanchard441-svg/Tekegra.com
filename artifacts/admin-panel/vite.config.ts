@@ -34,6 +34,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
+      // Workspace lib re-exported through the @/ alias so pages can import
+      // from "@/lib/api-client-react/..." without duplicating generated code.
+      '@/lib/api-client-react': path.resolve(import.meta.dirname, '../../lib/api-client-react'),
       '@assets': path.resolve(
         import.meta.dirname,
         '..',

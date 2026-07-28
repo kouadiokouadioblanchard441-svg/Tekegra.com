@@ -22,8 +22,13 @@ class Settings(BaseSettings):
     FREE_SIGNALS_PER_DAY: int = 6
     PREMIUM_SIGNALS_PER_DAY: int = 9
 
-    # Database
+    # Database (accepts DATABASE_URL or SUPABASE_DATABASE_URL)
     DATABASE_URL: str = ""
+    SUPABASE_DATABASE_URL: str = ""
+
+    @property
+    def effective_database_url(self) -> str:
+        return self.SUPABASE_DATABASE_URL or self.DATABASE_URL
 
     # App
     ENVIRONMENT: str = "development"

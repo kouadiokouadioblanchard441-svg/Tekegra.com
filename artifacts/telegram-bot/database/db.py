@@ -41,7 +41,11 @@ def _get_db_url() -> tuple[str, dict]:
     url = urlunparse(clean_parsed)
 
     # Map sslmode → ssl connect_arg with full verification (no CERT_NONE)
-    connect_args: dict = {}
+    connect_args: dict = {
+        # Supabase uses PgBouncer in transaction mode which doesn't support
+        # prepared statements — disable the cache to avoid DuplicatePreparedStatementError
+        "statement_cache_size": 0,
+    }
     if sslmode in ("require", "verify-ca", "verify-full"):
         connect_args["ssl"] = True   # asyncpg uses Python's default SSL ctx (CERT_REQUIRED)
     elif sslmode == "prefer":
