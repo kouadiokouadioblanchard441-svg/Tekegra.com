@@ -39,7 +39,7 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await call.message.edit_text("⏳ *Analyse IA Lucky Jet en cours...*", parse_mode="Markdown")
+    await call.message.edit_text("⏳ *Chargement du signal Lucky Jet...*", parse_mode="Markdown")
     await asyncio.sleep(2)
 
     is_premium = db_user.is_premium
@@ -99,7 +99,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
 
     label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     await call.message.edit_text(
-        f"⏳ *Analyse IA Lucky Jet [{label}] en cours...*",
+        f"⏳ *Chargement du signal Lucky Jet [{label}]...*",
         parse_mode="Markdown",
     )
     await asyncio.sleep(2)
@@ -180,7 +180,7 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
 
     label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     await call.message.edit_text(
-        f"⏳ *Analyse IA premium Lucky Jet [{label}]...*",
+        f"⏳ *Chargement du signal Premium Lucky Jet [{label}]...*",
         parse_mode="Markdown",
     )
     await asyncio.sleep(2.5)
@@ -214,7 +214,7 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "lj:analyse")
 async def cb_analyse(call: CallbackQuery):
-    await call.message.edit_text("⏳ *Analyse IA Lucky Jet...*", parse_mode="Markdown")
+    await call.message.edit_text("⏳ *Chargement Lucky Jet...*", parse_mode="Markdown")
     await asyncio.sleep(1.5)
 
     signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")

@@ -37,7 +37,7 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
 
     label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     await call.message.edit_text(
-        f"⏳ *Analyse IA Rocket Queen [{label}] en cours...*",
+        f"⏳ *Chargement du signal Rocket Queen [{label}]...*",
         parse_mode="Markdown",
     )
     await asyncio.sleep(2)
@@ -114,7 +114,7 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
 
     label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     await call.message.edit_text(
-        f"⏳ *Analyse IA Premium Rocket Queen [{label}]...*",
+        f"⏳ *Chargement du signal Premium Rocket Queen [{label}]...*",
         parse_mode="Markdown",
     )
     await asyncio.sleep(2.5)
@@ -147,7 +147,7 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "rq:analyse")
 async def cb_rq_analyse(call: CallbackQuery):
-    await call.message.edit_text("⏳ *Analyse IA Rocket Queen...*", parse_mode="Markdown")
+    await call.message.edit_text("⏳ *Chargement Rocket Queen...*", parse_mode="Markdown")
     await asyncio.sleep(1.5)
     signal = generate_rocketqueen_signal(is_premium=False, cote_type="auto")
     text = (

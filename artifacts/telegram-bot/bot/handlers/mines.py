@@ -32,7 +32,7 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await call.message.edit_text("⏳ *Analyse IA Mines en cours...*", parse_mode="Markdown")
+    await call.message.edit_text("⏳ *Chargement du signal Mines...*", parse_mode="Markdown")
     await asyncio.sleep(2)
 
     is_premium = db_user.is_premium
@@ -108,7 +108,7 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await call.message.edit_text("⏳ *Analyse IA Mines en cours...*", parse_mode="Markdown")
+    await call.message.edit_text("⏳ *Chargement du signal Mines...*", parse_mode="Markdown")
     await asyncio.sleep(2)
 
     allowed, remaining = await svc.try_consume_free_signal(db_user)
@@ -160,7 +160,7 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
         await call.answer("🔒 Premium requis")
         return
 
-    await call.message.edit_text("⏳ *Analyse IA premium Mines...*", parse_mode="Markdown")
+    await call.message.edit_text("⏳ *Chargement du signal Premium Mines...*", parse_mode="Markdown")
     await asyncio.sleep(2.5)
 
     signal = generate_mines_signal(is_premium=True)
@@ -186,7 +186,7 @@ async def cb_cell_tap(call: CallbackQuery):
 
 @router.callback_query(F.data == "mines:analyse")
 async def cb_mines_analyse(call: CallbackQuery):
-    await call.message.edit_text("⏳ *Analyse IA Mines...*", parse_mode="Markdown")
+    await call.message.edit_text("⏳ *Chargement Mines...*", parse_mode="Markdown")
     await asyncio.sleep(1.5)
 
     signal = generate_mines_signal(is_premium=False)
