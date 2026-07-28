@@ -67,6 +67,9 @@ def generate_luckyjet_signal(is_premium: bool = False, cote_type: str = "auto") 
     assurance = _assurance_for_type(cote_type)
     countdown = _get_countdown()
 
+    # Seconde précise pour placer la mise (ex: "à la 3ème seconde du round")
+    mise_seconde = round(random.uniform(1.0, 3.5 if not is_premium else 5.0), 1)
+
     return {
         "heure": heure,
         "cote": cote,
@@ -76,6 +79,7 @@ def generate_luckyjet_signal(is_premium: bool = False, cote_type: str = "auto") 
         "countdown": countdown,
         "is_premium": is_premium,
         "cote_type": cote_type,
+        "mise_seconde": mise_seconde,
     }
 
 
@@ -99,6 +103,51 @@ def generate_rocketqueen_signal(is_premium: bool = False, cote_type: str = "auto
         "countdown": countdown,
         "is_premium": is_premium,
         "cote_type": cote_type,
+    }
+
+
+# ─── Aviator ──────────────────────────────────────────────────────────────────
+
+def generate_aviator_signal(is_premium: bool = False) -> dict:
+    """Generate an Aviator prediction signal with precise time and cash-out second."""
+    heure = _get_signal_time()
+    countdown = _get_countdown()
+    niveau = _get_niveau()
+    risque = _get_risque(niveau)
+
+    # Cash-out second: moment précis dans le round où retirer
+    if is_premium:
+        # Premium : cotes plus élevées, secondes plus tardives
+        cashout_second = round(random.uniform(2.0, 8.0), 1)
+        cote = round(random.choices(
+            [random.uniform(1.5, 3.0), random.uniform(3.0, 8.0), random.uniform(8.0, 30.0)],
+            weights=[35, 40, 25],
+        )[0], 2)
+    else:
+        # Gratuit : cotes prudentes
+        cashout_second = round(random.uniform(1.5, 4.5), 1)
+        cote = round(random.choices(
+            [random.uniform(1.3, 2.5), random.uniform(2.5, 5.0)],
+            weights=[55, 45],
+        )[0], 2)
+
+    # Fenêtre de mise : intervalle en secondes avant le décollage
+    mise_start = random.randint(3, 8)
+    mise_end = mise_start + random.randint(2, 5)
+
+    assurance = "1.30x+" if not is_premium else "2.00x+"
+
+    return {
+        "heure": heure,
+        "cote": f"{cote}x",
+        "cashout_second": cashout_second,
+        "mise_start": mise_start,
+        "mise_end": mise_end,
+        "assurance": assurance,
+        "niveau": niveau,
+        "risque": risque,
+        "countdown": countdown,
+        "is_premium": is_premium,
     }
 
 

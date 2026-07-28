@@ -17,13 +17,16 @@ def format_luckyjet_signal(
     promo_code: str,
     is_premium: bool = False,
     cote_type: str = "auto",
+    mise_seconde: float = 0.0,
 ) -> str:
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
     ct_label = f" | {_cote_label(cote_type)}" if cote_type != "auto" else ""
+    seconde_line = f"│◉➤ *PLACER À* : *{mise_seconde}s* après le départ ⚡\n" if mise_seconde else ""
     return (
         f"🚀 *LUCKY JET PREDICTION* [{badge}{ct_label}]\n"
         f"{SEP}\n"
         f"│◉➤ *HEURE* : {heure} ⏰\n"
+        f"{seconde_line}"
         f"│◉➤ *COTE* : {cote} 🚀\n"
         f"│◉➤ *ASSURANCE* : {assurance} ✅\n"
         f"{SEP}\n"
@@ -81,6 +84,30 @@ def format_mines_signal(
         f"│◉➤ *Difficulté* : {mines} mines 💣\n"
         f"│◉➤ *Niveau conseillé* : {niveau}\n"
         f"│◉➤ *Gestion du risque* : {risque} ✅\n"
+        f"{SEP}\n"
+        f"🎁 Code promo : `{promo_code}`"
+    )
+
+
+def format_aviator_signal(
+    heure: str,
+    cote: str,
+    cashout_second: float,
+    mise_start: int,
+    mise_end: int,
+    assurance: str,
+    promo_code: str,
+    is_premium: bool = False,
+) -> str:
+    badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
+    return (
+        f"✈️ *AVIATOR PREDICTION* [{badge}]\n"
+        f"{SEP}\n"
+        f"│◉➤ *HEURE DU ROUND* : {heure} ⏰\n"
+        f"│◉➤ *PLACER LA MISE* : entre {mise_start}s et {mise_end}s avant décollage 🕐\n"
+        f"│◉➤ *RETIRER À* : *{cashout_second}s* après décollage ⚡\n"
+        f"│◉➤ *COTE CIBLE* : {cote} 🚀\n"
+        f"│◉➤ *ASSURANCE* : {assurance} ✅\n"
         f"{SEP}\n"
         f"🎁 Code promo : `{promo_code}`"
     )

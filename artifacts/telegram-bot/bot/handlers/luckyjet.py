@@ -71,6 +71,7 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=is_premium,
         cote_type=signal.get("cote_type", "auto"),
+        mise_seconde=signal.get("mise_seconde", 0.0),
     )
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
@@ -130,6 +131,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=False,
         cote_type=cote_type,
+        mise_seconde=signal.get("mise_seconde", 0.0),
     )
     text += f"\n\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*"
     text += f"\n\n{format_countdown(signal['countdown'])}"
@@ -196,6 +198,7 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=True,
         cote_type=cote_type,
+        mise_seconde=signal.get("mise_seconde", 0.0),
     )
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
