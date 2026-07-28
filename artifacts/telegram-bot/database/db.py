@@ -18,9 +18,9 @@ def _get_db_url() -> tuple[str, dict]:
     """
     from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
-    raw = os.environ.get("DATABASE_URL", "")
+    raw = os.environ.get("SUPABASE_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
     if not raw:
-        raise RuntimeError("DATABASE_URL environment variable is not set")
+        raise RuntimeError("SUPABASE_DATABASE_URL (ou DATABASE_URL) n'est pas défini")
 
     # Normalise scheme for SQLAlchemy + asyncpg
     if raw.startswith("postgresql://"):
