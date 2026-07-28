@@ -56,8 +56,25 @@ artifacts/telegram-bot/
 - Style Unicode identique aux captures d'écran
 - Architecture modulaire prête pour scaling
 
+## Déploiement Vercel
+
+Voir `DEPLOY.md` pour le guide complet. Résumé :
+
+**Vercel** → Admin Panel + API (vercel.json déjà configuré)
+- Build: `pnpm install && pnpm --filter @workspace/admin-panel run build`
+- Output: `artifacts/admin-panel/dist/public`
+- Env vars: `SUPABASE_DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `ADMIN_PASSWORD`, `SESSION_SECRET`
+
+**Séparé (Railway/Render/Replit)** → Bot Telegram Python
+- Polling: `cd artifacts/telegram-bot && python main.py`
+- Webhook: `cd artifacts/telegram-bot && python main_webhook.py` (+ `WEBHOOK_HOST`)
+
 ## Gotchas
 
 - Sans `TELEGRAM_BOT_TOKEN`, le bot refuse de démarrer
 - La DB est initialisée automatiquement au démarrage
 - L'admin doit avoir son ID dans `ADMIN_IDS`
+- Supabase : utiliser le **Session pooler (port 5432)** ou la connexion directe,
+  pas le Transaction pooler (port 6543) — incompatible avec asyncpg/SQLAlchemy
+- `manage-package-manager-versions=false` dans `.npmrc` est requis pour que
+  pnpm 10.x (Vercel) ne tente pas d'installer pnpm 9.x en boucle
