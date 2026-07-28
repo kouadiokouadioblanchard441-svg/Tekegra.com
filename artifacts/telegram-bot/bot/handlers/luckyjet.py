@@ -78,7 +78,6 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         text, parse_mode="Markdown",
         reply_markup=luckyjet_after_signal_keyboard(),
     )
-    await call.message.answer(format_countdown(signal["countdown"]), parse_mode="Markdown")
     schedule_delete(call.message.chat.id, call.message.message_id,
                     delete_in_seconds=signal["countdown"] + 120)
     await call.answer("✅ Signal généré !")
@@ -138,10 +137,6 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         text,
         parse_mode="Markdown",
         reply_markup=luckyjet_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
-    )
-    await call.message.answer(
-        f"{format_countdown(signal['countdown'])}\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*",
-        parse_mode="Markdown",
     )
 
     # Auto-delete 2 minutes after game time
@@ -208,7 +203,6 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         parse_mode="Markdown",
         reply_markup=luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
-    await call.message.answer(format_countdown(signal["countdown"]), parse_mode="Markdown")
 
     schedule_delete(call.message.chat.id, call.message.message_id,
                     delete_in_seconds=signal["countdown"] + 120)
