@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm install && pnpm --filter @workspace/admin-panel run build && cp -r artifacts/admin-panel/dist/public public",
+  "buildCommand": "pnpm install && pnpm --filter @workspace/admin-panel run build && rm -rf public && mkdir -p public && cp -r artifacts/admin-panel/dist/public/. public/",
   "outputDirectory": "public",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
