@@ -9,7 +9,7 @@ from bot.services.user_service import UserService
 from bot.utils.formatters import (
     format_luckyjet_signal, format_luckyjet_analysis,
 )
-from bot.utils.message_cleaner import schedule_delete
+from bot.utils.message_cleaner import schedule_delete, delete_previous_signal, track_signal_message
 from bot.keyboards.luckyjet import (
     luckyjet_menu_keyboard,
     luckyjet_after_signal_keyboard,
@@ -39,6 +39,7 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
+    await delete_previous_signal(user.id)
     await call.message.edit_text("⏳ *Chargement du signal Lucky Jet...*", parse_mode="Markdown")
     await asyncio.sleep(2)
 
@@ -85,6 +86,7 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         text, parse_mode="Markdown",
         reply_markup=luckyjet_after_signal_keyboard(),
     )
+    track_signal_message(user.id, call.message.chat.id, call.message.message_id)
     schedule_delete(call.message.chat.id, call.message.message_id,
                     delete_in_seconds=signal["countdown"] + 120)
     await call.answer("✅ Signal généré !")
@@ -105,6 +107,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
     )
 
     label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
+    await delete_previous_signal(user.id)
     await call.message.edit_text(
         f"⏳ *Chargement du signal Lucky Jet [{label}]...*",
         parse_mode="Markdown",
@@ -154,6 +157,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
     )
 
     # Auto-delete 2 minutes after game time
+    track_signal_message(user.id, call.message.chat.id, call.message.message_id)
     schedule_delete(call.message.chat.id, call.message.message_id,
                     delete_in_seconds=signal["countdown"] + 120)
 
@@ -192,6 +196,7 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         return
 
     label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
+    await delete_previous_signal(user.id)
     await call.message.edit_text(
         f"⏳ *Chargement du signal Premium Lucky Jet [{label}]...*",
         parse_mode="Markdown",
@@ -225,6 +230,7 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         reply_markup=luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
 
+    track_signal_message(user.id, call.message.chat.id, call.message.message_id)
     schedule_delete(call.message.chat.id, call.message.message_id,
                     delete_in_seconds=signal["countdown"] + 120)
 
