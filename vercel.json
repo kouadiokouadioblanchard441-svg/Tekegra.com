@@ -9,16 +9,18 @@
       "runtime": "@vercel/node@5"
     },
     "api/bot.py": {
+      "runtime": "@vercel/python",
       "maxDuration": 30
     },
-    "api/setup.py": {
+    "api/setup_webhook.py": {
+      "runtime": "@vercel/python",
       "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/webhook", "destination": "/api/bot" },
-    { "source": "/setup",   "destination": "/api/setup" },
-    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/webhook",      "destination": "/api/bot" },
+    { "source": "/setup",        "destination": "/api/setup_webhook" },
+    { "source": "/api/(.*)",     "destination": "/api/index" },
     { "source": "/((?!api/|webhook|setup).*)", "destination": "/index.html" }
   ],
   "env": {
