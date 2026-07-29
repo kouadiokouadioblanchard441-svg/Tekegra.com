@@ -1,82 +1,61 @@
 # Lucky Jet AI Bot
 
-A Telegram bot with signals for Lucky Jet and Mines casino games, with a React admin panel and Node.js API — designed to deploy on Vercel with a Supabase PostgreSQL database.
+A Telegram bot for Lucky Jet signals with a React admin panel and Node.js/Express API server.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────┐
-│                 VERCEL                       │
-│  /              → Admin Panel (React/Vite)  │
-│  /api/*         → API (Express Node.js)     │
-│  /webhook       → Telegram Bot (Python)     │
-│  /setup         → One-time setup endpoint   │
-│  DB: Supabase PostgreSQL                    │
-└─────────────────────────────────────────────┘
-```
+| Layer | Stack | Path |
+|-------|-------|------|
+| Telegram Bot | Python 3.12, aiogram 3, FastAPI, SQLAlchemy + asyncpg | `artifacts/telegram-bot/` |
+| Admin Panel | React, Vite, Tailwind, shadcn/ui | `artifacts/admin-panel/` |
+| API Server | Node.js, Express 5, Drizzle ORM, pg | `artifacts/api-server/` |
+| DB Library | Drizzle ORM schema (shared) | `lib/db/` |
+| API Spec | Zod schemas + OpenAPI spec | `lib/api-spec/`, `lib/api-zod/` |
 
-## Artifacts
+Database: **Supabase PostgreSQL** (shared by bot and API server).
 
-| Artifact | Path | Description |
-|----------|------|-------------|
-| Admin Panel | `artifacts/admin-panel/` | React + Vite + Tailwind dashboard |
-| API Server | `artifacts/api-server/` | Express Node.js REST API |
-| Telegram Bot | `artifacts/telegram-bot/` | aiogram 3 Python bot (polling on Replit) |
+## Running on Replit
 
-## Shared Libraries
+### Workflows
 
-| Library | Path | Description |
-|---------|------|-------------|
-| `@workspace/db` | `lib/db/` | Drizzle ORM + pg (used by API server) |
-| `@workspace/api-zod` | `lib/api-zod/` | Zod schemas for API validation |
-| `@workspace/api-client-react` | `lib/api-client-react/` | Generated React Query hooks + customFetch |
+- **Telegram Bot** — `cd artifacts/telegram-bot && pip install -r requirements.txt && python main.py`
+- **API Server** — `pnpm --filter @workspace/api-server run dev` (port 8080)
+- **Admin Panel** — `pnpm --filter @workspace/admin-panel run dev` (port assigned by Replit)
 
-## Required Environment Secrets
+### Required secrets (set via Replit Secrets)
 
 | Secret | Description |
 |--------|-------------|
-| `SUPABASE_DATABASE_URL` | Supabase Session pooler URL (port 5432) |
-| `TELEGRAM_BOT_TOKEN` | Token from @BotFather |
-| `ADMIN_PASSWORD` | Admin panel login password |
-| `ADMIN_IDS` | Telegram admin IDs (comma-separated) |
-| `SESSION_SECRET` | JWT signing secret (32+ chars) |
+| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather |
+| `DATABASE_URL` | Supabase Session pooler URL, port **5432** |
+| `ADMIN_PASSWORD` | Password for the admin panel |
+| `SESSION_SECRET` | JWT signing secret (32+ chars) ✅ already set |
 
-## Optional Environment Variables
+### Already configured env vars
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BOT_PROMO_CODE` | `JRYVES` | 1WIN promo code shown in signals |
-| `BOT_AFFILIATE_LINK` | — | 1WIN affiliate link |
-| `FREE_SIGNALS_PER_DAY` | `6` | Free signals per day |
-| `PREMIUM_SIGNALS_PER_DAY` | `9` | Premium signals per day |
-| `CHANNEL_1_ID` | — | Required channel ID (integer) |
-| `CHANNEL_1_LINK` | — | Required channel invite link |
-| `CHANNEL_1_NAME` | — | Required channel display name |
-| `CHANNEL_2_ID` / `CHANNEL_2_LINK` / `CHANNEL_2_NAME` | — | Second optional channel |
+| Variable | Value |
+|----------|-------|
+| `ADMIN_IDS` | `8537454742` |
+| `BOT_NAME` | `Lucky Jet AI Bot` |
+| `BOT_PROMO_CODE` | `JRYVES` |
+| `FREE_SIGNALS_PER_DAY` | `6` |
+| `PREMIUM_SIGNALS_PER_DAY` | `9` |
+| `ENVIRONMENT` | `production` |
+| `LOG_LEVEL` | `INFO` |
 
-## How to Run on Replit
+### Database setup (first run)
 
-- **Admin Panel**: workflow `artifacts/admin-panel: web` (Vite dev server)
-- **API Server**: workflow `artifacts/api-server: API Server` (builds + starts Express)
-- **Telegram Bot** (polling): workflow `Telegram Bot` — requires `TELEGRAM_BOT_TOKEN`
+```bash
+cd lib/db && pnpm run push
+```
 
-## How to Deploy on Vercel
+## Deployment (Vercel)
 
-See `DEPLOY.md` for full instructions. Summary:
+See `DEPLOY.md` for the full Vercel deployment guide. The project deploys as:
+- `/` → Admin Panel (React, static)
+- `/api/*` → API Server (Express, serverless)
+- `/webhook` → Telegram Bot (Python, serverless)
 
-1. Push to GitHub
-2. Import on vercel.com — Vercel auto-detects `vercel.json` at project root
-3. Set all env vars in Vercel dashboard (see table above)
-4. After deploy, visit `https://YOUR-APP.vercel.app/setup?token=ADMIN_PASSWORD` once to register the webhook
+## User preferences
 
-## Database Notes
-
-- The **Telegram bot** uses SQLAlchemy + asyncpg (Python)
-- The **API server** uses Drizzle ORM + pg (Node.js)
-- Both connect via `SUPABASE_DATABASE_URL`
-- Use **Session pooler (port 5432)**, NOT the Transaction pooler (port 6543)
-- Tables are created automatically on first run (`init_db()` in Python, `drizzle-kit push` for Node.js schema)
-
-## User Preferences
-
-- French preferred for communication
+- Keep existing project structure — do not restructure or migrate without asking.
