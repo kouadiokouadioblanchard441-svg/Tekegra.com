@@ -1,119 +1,142 @@
 # Déploiement — Guide complet
 
-## 1. Admin Panel + API → Vercel
+## Architecture
 
-### Étape 1 — Importer le projet sur Vercel
+```
+┌──────────────────────────────────────────────────┐
+│                    VERCEL                         │
+│                                                   │
+│  /              → Panneau Admin (React)           │
+│  /api/*         → API Express Node.js (serverless)│
+│  /webhook       → Bot Telegram Python (serverless)│
+│  /setup         → Setup unique (enregistre webhook│
+│                                                   │
+│  DB : Supabase PostgreSQL (partagée)              │
+└──────────────────────────────────────────────────┘
+```
 
-1. Allez sur [vercel.com/new](https://vercel.com/new)
-2. Cliquez **Import Git Repository** → sélectionnez ce dépôt
-3. Vercel détecte automatiquement le `vercel.json` → ne changez rien aux paramètres du build
+---
 
-### Étape 2 — Variables d'environnement à ajouter sur Vercel
+## Étape 1 — Pousser le code sur GitHub
 
-Dans **Settings → Environment Variables** de votre projet Vercel, ajoutez :
+Si ce n'est pas déjà fait :
+
+1. Crée un dépôt sur [github.com/new](https://github.com/new)
+2. Dans le shell Replit :
+
+```bash
+git remote add origin https://github.com/TON_USERNAME/NOM_DU_REPO.git
+git add -A
+git commit -m "Initial commit"
+git push -u origin main
+```
+
+---
+
+## Étape 2 — Créer le projet sur Vercel
+
+1. Va sur [vercel.com/new](https://vercel.com/new)
+2. Clique **"Add New Project"** → **"Import Git Repository"**
+3. Sélectionne ton dépôt GitHub
+4. Vercel détecte le `vercel.json` — **ne modifie rien** aux paramètres de build
+
+---
+
+## Étape 3 — Variables d'environnement
+
+**Avant de cliquer "Deploy"**, développe la section **"Environment Variables"** et ajoute :
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| `SUPABASE_DATABASE_URL` | URL de connexion PostgreSQL Supabase | `postgresql://postgres.xxx:password@aws-0-eu-west-3.pooler.supabase.com:5432/postgres` |
-| `TELEGRAM_BOT_TOKEN` | Token du bot (pour la diffusion) | `7123456789:AAHdqTcvCH1vGWJxf...` |
-| `ADMIN_PASSWORD` | Mot de passe de l'interface admin | `MonMotDePasse2024!` |
-| `SESSION_SECRET` | Clé secrète JWT (min 32 caractères) | `une-chaine-aleatoire-tres-longue-et-securisee` |
+| `SUPABASE_DATABASE_URL` | URL Supabase **Session pooler (port 5432)** | `postgresql://postgres.xxx:pass@aws-0-eu.pooler.supabase.com:5432/postgres` |
+| `TELEGRAM_BOT_TOKEN` | Token du bot (@BotFather) | `7123456789:AAHdqTcvCH1vG...` |
+| `ADMIN_PASSWORD` | Mot de passe du panneau admin | `MonMotDePasse2024!` |
+| `SESSION_SECRET` | Clé JWT aléatoire (32+ caractères) | `xK9mP2qL7nR4vW8yZ1aB3cD5eF` |
+| `ADMIN_IDS` | Tes IDs Telegram admin (virgule-séparé) | `123456789` |
+| `CHANNEL_1_ID` | ID de ta chaîne obligatoire (si activé) | `-1001234567890` |
+| `CHANNEL_1_LINK` | Lien de ta chaîne | `https://t.me/moncanal` |
+| `CHANNEL_1_NAME` | Nom affiché | `📢 Canal Officiel` |
 
-> ⚠️ **SUPABASE_DATABASE_URL** : utilisez le **Session pooler (port 5432)** ou la **connexion directe**,
-> **pas** le Transaction pooler (port 6543) qui est incompatible avec SQLAlchemy.
-
-### Étape 3 — Paramètres Vercel (auto-détectés via vercel.json)
-
-| Paramètre | Valeur |
-|-----------|--------|
-| Framework | Other (aucun) |
-| Build Command | `pnpm install && pnpm --filter @workspace/admin-panel run build` |
-| Output Directory | `artifacts/admin-panel/dist/public` |
-| Install Command | `pnpm install` |
-| Node.js Version | 20.x |
-
-### Ce qui est déployé sur Vercel
-
-- **`/`** → Panel admin React (dashboard, users, settings, broadcast)
-- **`/api/*`** → API Express serverless (auth JWT, stats, gestion utilisateurs, broadcast)
-- **`/api/healthz`** → Health check
+> ⚠️ `SUPABASE_DATABASE_URL` : utilise le **Session pooler (port 5432)** obligatoirement,
+> **pas** le Transaction pooler (port 6543).
 
 ---
 
-## 2. Bot Telegram → Hébergement séparé
+## Étape 4 — Déployer
 
-Le bot Telegram utilise le **long-polling** qui n'est pas compatible avec Vercel
-(pas de processus persistant). Il doit être hébergé sur une plateforme qui supporte
-les processus continus.
-
-### Option A — Railway (recommandé, gratuit jusqu'à $5/mois)
-
-1. Créer un projet sur [railway.app](https://railway.app)
-2. Importer ce dépôt GitHub
-3. **Start Command** : `cd artifacts/telegram-bot && pip install -r requirements.txt && python main.py`
-4. Variables d'environnement à ajouter :
-
-| Variable | Valeur |
-|----------|--------|
-| `SUPABASE_DATABASE_URL` | Même URL que Vercel |
-| `TELEGRAM_BOT_TOKEN` | Token du bot |
-| `ADMIN_IDS` | Vos IDs Telegram admin |
-| `BOT_PROMO_CODE` | Code promo (ex: JRYVES) |
-| `BOT_AFFILIATE_LINK` | Lien affiliation 1WIN |
-
-### Option B — Mode Webhook (Railway / Render / Fly.io)
-
-Utiliser `main_webhook.py` au lieu de `main.py` pour un démarrage plus rapide :
-
-```bash
-# Variable supplémentaire
-WEBHOOK_HOST=https://votre-app.railway.app
-
-# Start Command
-cd artifacts/telegram-bot && pip install -r requirements.txt && python main_webhook.py
-```
-
-### Option C — Rester sur Replit
-
-Le workflow **Telegram Bot** sur Replit est déjà configuré pour le polling.
-Il suffit d'y mettre le bon `TELEGRAM_BOT_TOKEN` et il tourne en continu.
+Clique **"Deploy"**. Le build prend ~2–3 minutes :
+- ✅ `pnpm install`
+- ✅ Build admin panel React
+- ✅ Compilation API Node.js
+- ✅ Packaging fonction Python (bot webhook)
 
 ---
 
-## 3. Architecture finale
+## Étape 5 — Enregistrer le webhook (UNE SEULE FOIS)
+
+Après le premier déploiement, ouvre cette URL dans ton navigateur :
 
 ```
-┌─────────────────────────────────────────┐
-│              VERCEL                      │
-│                                          │
-│  Panel Admin (React)  →  /              │
-│  API Express (serverless)  →  /api/*    │
-│    • Auth JWT                            │
-│    • Stats & gestion users              │
-│    • Broadcast Telegram                 │
-│                                          │
-│  DB: Supabase PostgreSQL                │
-└─────────────────────────────────────────┘
-              ↕ même DB
-┌─────────────────────────────────────────┐
-│         RAILWAY / RENDER / REPLIT        │
-│                                          │
-│  Bot Telegram Python (polling/webhook)  │
-│    • Handlers aiogram                   │
-│    • Signaux Lucky Jet / Mines          │
-│    • Approbation utilisateurs           │
-│                                          │
-│  DB: Supabase PostgreSQL (partagée)     │
-└─────────────────────────────────────────┘
+https://TON-APP.vercel.app/setup?token=TON_ADMIN_PASSWORD
 ```
+
+Remplace :
+- `TON-APP` → ton sous-domaine Vercel (ex: `lucky-jet-bot.vercel.app`)
+- `TON_ADMIN_PASSWORD` → la valeur de `ADMIN_PASSWORD`
+
+Tu verras :
+```
+✅ Setup terminé !
+Webhook enregistré : https://TON-APP.vercel.app/webhook
+Updates en attente : 0
+Dernière erreur : aucune
+```
+
+**Cette étape est obligatoire** — elle dit à Telegram où envoyer les messages.
 
 ---
 
-## 4. Checklist avant déploiement
+## Étape 6 — Vérifier
 
-- [ ] Token Telegram valide dans les secrets (`TELEGRAM_BOT_TOKEN`)
-- [ ] `SUPABASE_DATABASE_URL` = Session pooler (port 5432) ou Direct Connection
-- [ ] `ADMIN_PASSWORD` défini (pour se connecter au panel)
-- [ ] `SESSION_SECRET` généré aléatoirement (min 32 caractères)
-- [ ] Build local OK : `pnpm --filter @workspace/admin-panel run build`
-- [ ] Tables DB créées (automatique au 1er démarrage du bot)
+| URL | Ce que tu dois voir |
+|-----|---------------------|
+| `https://TON-APP.vercel.app/` | Panneau admin (page de login) |
+| `https://TON-APP.vercel.app/api/healthz` | `{"status":"ok"}` |
+| `https://TON-APP.vercel.app/webhook` | `Lucky Jet Bot - Webhook actif` |
+
+Teste le bot Telegram — envoie `/start`.
+
+---
+
+## Redéploiements automatiques
+
+Chaque `git push` sur la branche `main` redéclenche automatiquement le build Vercel.  
+Le webhook reste enregistré — **pas besoin de refaire l'étape 5**.
+
+---
+
+## Dépannage
+
+| Symptôme | Cause probable | Solution |
+|----------|---------------|----------|
+| Build échoue | Erreur TypeScript | Vérifie les logs Vercel → onglet "Build" |
+| Bot ne répond pas | Webhook non enregistré | Refais l'étape 5 |
+| Erreur DB au démarrage | Mauvaise URL Supabase | Vérifie que c'est le port **5432** (Session pooler) |
+| Panneau admin inaccessible | Build admin panel raté | Vérifie `SUPABASE_DATABASE_URL` dans Vercel env vars |
+| `/setup` répond 401 | Mauvais token | Le `?token=` doit être égal à `ADMIN_PASSWORD` |
+
+---
+
+## Variables optionnelles
+
+Ces variables peuvent être ajoutées dans Vercel → Settings → Environment Variables :
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `BOT_PROMO_CODE` | `JRYVES` | Code promo 1WIN affiché dans les signaux |
+| `BOT_AFFILIATE_LINK` | _(vide)_ | Lien d'inscription 1WIN |
+| `FREE_SIGNALS_PER_DAY` | `6` | Signaux gratuits par jour |
+| `PREMIUM_SIGNALS_PER_DAY` | `9` | Signaux premium par jour |
+| `CHANNEL_2_ID` | _(vide)_ | 2ème chaîne obligatoire |
+| `CHANNEL_2_LINK` | _(vide)_ | Lien 2ème chaîne |
+| `CHANNEL_2_NAME` | _(vide)_ | Nom 2ème chaîne |

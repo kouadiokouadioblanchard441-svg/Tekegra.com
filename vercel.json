@@ -7,11 +7,19 @@
   "functions": {
     "api/index.ts": {
       "runtime": "@vercel/node@5"
+    },
+    "api/bot.py": {
+      "maxDuration": 30
+    },
+    "api/setup.py": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
+    { "source": "/webhook", "destination": "/api/bot" },
+    { "source": "/setup",   "destination": "/api/setup" },
     { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|webhook|setup).*)", "destination": "/index.html" }
   ],
   "env": {
     "NODE_ENV": "production"

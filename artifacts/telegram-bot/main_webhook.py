@@ -26,7 +26,7 @@ from loguru import logger
 from config import settings
 from database.db import init_db
 from bot.handlers import get_main_router
-from bot.middlewares import ThrottlingMiddleware, DbSessionMiddleware, BanCheckMiddleware
+from bot.middlewares import ThrottlingMiddleware, DbSessionMiddleware, BanCheckMiddleware, ChannelCheckMiddleware
 from bot.utils.message_cleaner import start_cleaner
 
 # ── Webhook configuration ────────────────────────────────────────────────────
@@ -92,6 +92,7 @@ def main():
 
     dp.update.middleware(DbSessionMiddleware())
     dp.update.middleware(BanCheckMiddleware())
+    dp.update.middleware(ChannelCheckMiddleware())
     dp.update.middleware(ThrottlingMiddleware(rate=settings.THROTTLE_RATE))
     dp.include_router(get_main_router())
 
