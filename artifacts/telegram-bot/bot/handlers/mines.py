@@ -69,7 +69,7 @@ def _render_grid_text(grid: list[list[str]]) -> str:
             if cell == "⭐":
                 cells.append("⭐")
             else:
-                cells.append("▫️")
+                cells.append("🟦")
         rows.append("".join(cells))
     return "\n".join(rows)
 
