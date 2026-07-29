@@ -25,7 +25,7 @@ export default function Broadcast() {
       {
         onSuccess: (res) => {
           toast.success(`Broadcast complete!`)
-          setResult({ sent: res.sentCount, failed: res.failedCount })
+          setResult({ sent: res.sent, failed: res.failed })
           setMessage("")
         },
         onError: () => toast.error("Failed to send broadcast")

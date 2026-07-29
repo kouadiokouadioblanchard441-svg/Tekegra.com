@@ -33,7 +33,7 @@ export default function Users() {
   const [premiumActive, setPremiumActive] = useState(true)
 
   // Use a simple ref-based debounce for search
-  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
