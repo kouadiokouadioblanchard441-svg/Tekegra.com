@@ -37,10 +37,12 @@ def format_luckyjet_signal(
     rounds_analysed: int = 0,
 ) -> str:
     return (
-        f"🚀 *LUCKY JET PREDICTION*\n\n"
-        f"|●>HEURE : {heure} ⏰\n"
-        f"|●>COTE : {cote} 🚀\n"
-        f"|●>ASSURANCE : {assurance} ✅\n\n"
+        f"🚀 *LUCKY JET PREDICTION*\n"
+        f"{SEP}\n"
+        f"|●>*HEURE : {heure}* ⏰\n"
+        f"|●>*COTE : {cote}* 🚀\n"
+        f"|●>*ASSURANCE : {assurance}* ✅\n"
+        f"{SEP}\n\n"
         f"code promo: {promo_code}"
     )
 

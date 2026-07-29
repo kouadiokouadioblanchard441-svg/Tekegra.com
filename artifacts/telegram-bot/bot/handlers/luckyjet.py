@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.signals import generate_luckyjet_signal
 from bot.services.user_service import UserService
 from bot.utils.formatters import (
-    format_luckyjet_signal, format_luckyjet_analysis, format_countdown
+    format_luckyjet_signal, format_luckyjet_analysis,
 )
 from bot.utils.message_cleaner import schedule_delete
 from bot.keyboards.luckyjet import (

@@ -55,8 +55,7 @@ def _is_peak_hour() -> bool:
 
 def _get_signal_time() -> str:
     now = datetime.now(pytz.UTC)
-    offset = random.randint(30, 300)
-    return (now + timedelta(seconds=offset)).strftime("%H:%M") + " (GMT+00)"
+    return now.strftime("%H:%M:%S")
 
 
 def _get_countdown() -> int:
