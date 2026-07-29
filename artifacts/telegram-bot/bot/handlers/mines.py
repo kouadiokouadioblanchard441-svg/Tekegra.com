@@ -71,7 +71,6 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
     ]
     if remaining is not None and not is_premium:
         lines.append(f"🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*")
-    lines.append(format_countdown(signal["countdown"]))
     lines.append(f"\ncode promo: `{settings.BOT_PROMO_CODE}`")
     return "\n".join(lines)
 
