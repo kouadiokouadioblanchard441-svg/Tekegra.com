@@ -51,7 +51,12 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-    outDir: path.resolve(import.meta.dirname, 'dist/public'),
+    // On Vercel (VERCEL=1), output directly to the project root's /public
+    // so Vercel finds it without any copy step, regardless of dashboard settings.
+    // Locally (Replit / CI), keep output inside dist/public.
+    outDir: process.env.VERCEL
+      ? path.resolve(import.meta.dirname, '../../public')
+      : path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
   },
   server: {
