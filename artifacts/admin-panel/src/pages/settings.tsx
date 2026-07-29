@@ -52,15 +52,11 @@ export default function Settings() {
     }
   }
 
-  // Update form when data loads
   useEffect(() => {
-    if (settings) {
-      reset(settings)
-    }
+    if (settings) reset(settings)
   }, [settings, reset])
 
   const onSubmit = (data: any) => {
-    // Only send the fields that are allowed to be updated
     const payload = {
       promoCode: data.promoCode,
       affiliateLink: data.affiliateLink,
@@ -71,16 +67,15 @@ export default function Settings() {
       channel2Link: data.channel2Link,
       channel2Name: data.channel2Name,
     }
-
     updateMutation.mutate(
       { data: payload },
       {
         onSuccess: (updatedData) => {
-          toast.success("Settings updated successfully")
+          toast.success("Paramètres enregistrés")
           queryClient.setQueryData(getGetSettingsQueryKey(), updatedData)
           reset(updatedData)
         },
-        onError: () => toast.error("Failed to update settings")
+        onError: () => toast.error("Erreur lors de l'enregistrement")
       }
     )
   }
@@ -90,79 +85,79 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Header — stacks on mobile */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Bot Configuration</h2>
-            <p className="text-muted-foreground">Manage core bot links, limits, and behavior.</p>
+            <h2 className="text-xl font-bold tracking-tight">Configuration</h2>
+            <p className="text-sm text-muted-foreground">Liens, limites et comportement du bot.</p>
           </div>
-          <Button type="submit" disabled={!isDirty || updateMutation.isPending}>
+          <Button type="submit" disabled={!isDirty || updateMutation.isPending} className="w-full sm:w-auto">
             {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save Changes
+            Enregistrer
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="shadow-sm border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Monetization</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Monétisation</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="promoCode">1WIN Promo Code</Label>
-                <Input id="promoCode" {...register("promoCode")} placeholder="e.g. VIP2024" />
+                <Label htmlFor="promoCode">Code promo 1WIN</Label>
+                <Input id="promoCode" {...register("promoCode")} placeholder="ex: VIP2024" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="affiliateLink">Affiliate Registration Link</Label>
+                <Label htmlFor="affiliateLink">Lien d'affiliation</Label>
                 <Input id="affiliateLink" {...register("affiliateLink")} placeholder="https://1w..." />
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-sm border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Signal Limits</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Limites de signaux</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="freeSignalsPerDay">Free Signals (Per Day)</Label>
+                <Label htmlFor="freeSignalsPerDay">Signaux gratuits / jour</Label>
                 <Input id="freeSignalsPerDay" type="number" {...register("freeSignalsPerDay")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="premiumSignalsPerDay">Premium Signals (Per Day)</Label>
+                <Label htmlFor="premiumSignalsPerDay">Signaux premium / jour</Label>
                 <Input id="premiumSignalsPerDay" type="number" {...register("premiumSignalsPerDay")} />
-                <p className="text-xs text-muted-foreground">Set high for "unlimited"</p>
+                <p className="text-xs text-muted-foreground">Mettre élevé pour "illimité"</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-sm border-border/50 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Required Channels</CardTitle>
-              <CardDescription>Channels users must subscribe to for approval</CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Canaux requis</CardTitle>
+              <CardDescription>Canaux auxquels les utilisateurs doivent s'abonner</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4 p-4 border rounded-md bg-muted/20">
-                <div className="font-medium text-sm">Primary Channel</div>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3 p-4 border rounded-md bg-muted/20">
+                <div className="font-medium text-sm">Canal principal</div>
                 <div className="space-y-2">
-                  <Label>Channel Name</Label>
-                  <Input {...register("channel1Name")} placeholder="Main Signals" />
+                  <Label>Nom du canal</Label>
+                  <Input {...register("channel1Name")} placeholder="Signaux Officiels" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Channel Link</Label>
+                  <Label>Lien du canal</Label>
                   <Input {...register("channel1Link")} placeholder="https://t.me/..." />
                 </div>
               </div>
-              
-              <div className="space-y-4 p-4 border rounded-md bg-muted/20">
-                <div className="font-medium text-sm">Secondary Channel</div>
+              <div className="space-y-3 p-4 border rounded-md bg-muted/20">
+                <div className="font-medium text-sm">Canal secondaire</div>
                 <div className="space-y-2">
-                  <Label>Channel Name</Label>
-                  <Input {...register("channel2Name")} placeholder="Backup/Chat" />
+                  <Label>Nom du canal</Label>
+                  <Input {...register("channel2Name")} placeholder="Canal VIP" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Channel Link</Label>
+                  <Label>Lien du canal</Label>
                   <Input {...register("channel2Link")} placeholder="https://t.me/..." />
                 </div>
               </div>
@@ -171,19 +166,76 @@ export default function Settings() {
         </div>
       </form>
 
-      {/* Read Only Banners Section */}
-      <Card className="shadow-sm border-border/50 bg-slate-50/50">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center"><ImageIcon className="mr-2 h-5 w-5 text-muted-foreground" /> Current Banners</CardTitle>
-          <CardDescription>Currently active image file_ids used by the bot. To update these, send a new photo to the bot directly via Telegram.</CardDescription>
+      {/* Change password */}
+      <Card className="shadow-sm border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Lock className="h-4 w-4 text-muted-foreground" /> Changer le mot de passe
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <form onSubmit={handlePwdSubmit(onChangePassword)} className="space-y-4 max-w-sm">
+            <div className="space-y-2">
+              <Label>Mot de passe actuel</Label>
+              <Input
+                type="password"
+                {...registerPwd("currentPassword", { required: true })}
+                autoComplete="current-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nouveau mot de passe</Label>
+              <Input
+                type="password"
+                {...registerPwd("newPassword", { required: true, minLength: 6 })}
+                autoComplete="new-password"
+              />
+              {pwdErrors.newPassword?.type === "minLength" && (
+                <p className="text-xs text-destructive">Minimum 6 caractères</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Confirmer le mot de passe</Label>
+              <Input
+                type="password"
+                {...registerPwd("confirmPassword", {
+                  required: true,
+                  validate: (v) => v === newPasswordValue || "Les mots de passe ne correspondent pas",
+                })}
+                autoComplete="new-password"
+              />
+              {pwdErrors.confirmPassword && (
+                <p className="text-xs text-destructive">{pwdErrors.confirmPassword.message}</p>
+              )}
+            </div>
+            <Button type="submit" disabled={pwdLoading} className="w-full sm:w-auto">
+              {pwdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+              Mettre à jour
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Banners (read only) */}
+      <Card className="shadow-sm border-border/50 bg-slate-50/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" /> Bannières actives
+          </CardTitle>
+          <CardDescription>Pour modifier, envoyez une nouvelle photo directement au bot via Telegram.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {['menuBanner', 'registerBanner', 'luckyjetBanner', 'minesBanner', 'guideBanner'].map((banner) => (
               <div key={banner} className="space-y-1 p-3 border bg-card rounded-md overflow-hidden">
-                <div className="text-xs font-medium text-muted-foreground capitalize">{banner.replace('Banner', ' Banner')}</div>
-                <div className="text-sm font-mono truncate bg-muted p-1.5 rounded" title={(settings as any)?.[banner] || 'Not set'}>
-                  {(settings as any)?.[banner] || <span className="text-muted-foreground italic">Not set</span>}
+                <div className="text-xs font-medium text-muted-foreground capitalize">
+                  {banner.replace('Banner', ' Banner')}
+                </div>
+                <div
+                  className="text-xs font-mono truncate bg-muted p-1.5 rounded"
+                  title={(settings as any)?.[banner] || 'Non défini'}
+                >
+                  {(settings as any)?.[banner] || <span className="text-muted-foreground italic">Non défini</span>}
                 </div>
               </div>
             ))}

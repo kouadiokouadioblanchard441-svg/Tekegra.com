@@ -15,83 +15,75 @@ export default function Broadcast() {
 
   const handleSend = () => {
     if (!message.trim()) return
-
-    if (!confirm("Are you sure you want to send this broadcast to ALL approved users?")) {
-      return
-    }
+    if (!confirm("Envoyer ce message à TOUS les utilisateurs approuvés ?")) return
 
     broadcastMutation.mutate(
       { data: { message } },
       {
         onSuccess: (res) => {
-          toast.success(`Broadcast complete!`)
+          toast.success("Broadcast envoyé !")
           setResult({ sent: res.sent, failed: res.failed })
           setMessage("")
         },
-        onError: () => toast.error("Failed to send broadcast")
+        onError: () => toast.error("Échec de l'envoi")
       }
     )
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto">
+    <div className="space-y-4 animate-in fade-in duration-500">
       <Card className="shadow-sm border-border/50">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <div className="p-2 bg-primary/10 rounded-md">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-md shrink-0">
               <MessageSquareText className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl">Mass Broadcast</CardTitle>
-              <CardDescription>Send a direct Telegram message to all approved bot users.</CardDescription>
+              <CardTitle className="text-base">Broadcast de masse</CardTitle>
+              <CardDescription className="text-xs">
+                Envoie un message Telegram à tous les utilisateurs approuvés.
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Textarea
-              placeholder="Type your message here... (Markdown is supported)
-Example:
-**BIG UPDATE!**
-We just added new signals for Mines. Go check them out!"
-              className="min-h-[250px] font-sans resize-y"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <div className="flex justify-between items-center text-xs text-muted-foreground">
-              <span>Supports basic Telegram Markdown (**, __, `, [text](url))</span>
-              <span>{message.length} characters</span>
-            </div>
+        <CardContent className="space-y-4">
+          <Textarea
+            placeholder={"Votre message ici...\n\nSupporte le Markdown Telegram :\n**gras**, __italique__, `code`"}
+            className="min-h-[200px] font-sans resize-y text-sm"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+          <div className="flex flex-wrap justify-between items-center gap-2 text-xs text-muted-foreground">
+            <span>Markdown : **gras**, __italique__, `code`, [lien](url)</span>
+            <span>{message.length} caractères</span>
           </div>
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button 
-              size="lg" 
-              onClick={handleSend} 
-              disabled={!message.trim() || broadcastMutation.isPending}
-            >
-              {broadcastMutation.isPending ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-5 w-5" />
-              )}
-              {broadcastMutation.isPending ? "Sending Broadcast..." : "Send to All Users"}
-            </Button>
-          </div>
+          <Button 
+            className="w-full"
+            onClick={handleSend} 
+            disabled={!message.trim() || broadcastMutation.isPending}
+          >
+            {broadcastMutation.isPending ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-5 w-5" />
+            )}
+            {broadcastMutation.isPending ? "Envoi en cours..." : "Envoyer à tous"}
+          </Button>
         </CardContent>
       </Card>
 
       {result && (
         <Card className="border-emerald-500/20 bg-emerald-500/5 animate-in slide-in-from-bottom-4">
-          <CardContent className="p-6">
-            <h3 className="font-semibold text-emerald-800 mb-2">Broadcast Results</h3>
-            <div className="flex gap-4">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-emerald-800 mb-3 text-sm">Résultats</h3>
+            <div className="flex flex-wrap gap-2">
               <Badge variant="success" className="text-sm px-3 py-1">
-                {result.sent} Delivered Successfully
+                ✓ {result.sent} envoyés
               </Badge>
               {result.failed > 0 && (
                 <Badge variant="destructive" className="text-sm px-3 py-1">
-                  {result.failed} Failed / Blocked
+                  ✗ {result.failed} échoués
                 </Badge>
               )}
             </div>
