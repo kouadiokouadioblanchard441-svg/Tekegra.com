@@ -36,11 +36,9 @@ def format_luckyjet_signal(
     verification_code: str = "",
     rounds_analysed: int = 0,
 ) -> str:
-    seconde_line = f"|●>RETIRER À : {mise_seconde}s après le départ ⚡\n" if mise_seconde else ""
     return (
         f"🚀 *LUCKY JET PREDICTION*\n\n"
         f"|●>HEURE : {heure} ⏰\n"
-        f"{seconde_line}"
         f"|●>COTE : {cote} 🚀\n"
         f"|●>ASSURANCE : {assurance} ✅\n\n"
         f"code promo: {promo_code}"
