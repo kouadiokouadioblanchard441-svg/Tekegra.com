@@ -109,9 +109,9 @@ def format_mines_signal(
 ) -> str:
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
     return (
-        f"💣 *MINES ANALYSE* [{badge}]\n"
+        f"🎯 *MINES ANALYSE* [{badge}]\n"
         f"{SEP}\n"
-        f"│◉➤ *Difficulté* : {mines} mines 💣\n"
+        f"│◉➤ *Difficulté* : {mines} mines\n"
         f"│◉➤ *Niveau conseillé* : {niveau}\n"
         f"│◉➤ *Gestion du risque* : {risque} ✅\n"
         f"{SEP}\n"

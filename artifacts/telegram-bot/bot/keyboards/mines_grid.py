@@ -23,9 +23,10 @@ def mines_grid_keyboard(
         for col_idx, cell in enumerate(row):
             pos = row_idx * 5 + col_idx
             # All cells are non-interactive display buttons
+            display = "🟦" if cell == "💣" else cell
             button_row.append(
                 InlineKeyboardButton(
-                    text=cell,
+                    text=display,
                     callback_data=f"mines:cell:{pos}:{cell}",
                 )
             )

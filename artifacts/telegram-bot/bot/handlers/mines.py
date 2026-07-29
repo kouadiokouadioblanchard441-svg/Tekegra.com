@@ -63,13 +63,13 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
 def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -> str:
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
     lines = [
-        f"💣 *MINES PREDICTION* [{badge}]",
+        f"🎯 *MINES PREDICTION* [{badge}]",
         SEP,
-        f"│◉ *Pièges* : {signal['mines']} mines 💣",
+        f"│◉ *Pièges* : {signal['mines']} mines",
         SEP,
         "",
         "⭐ *Cases recommandées* — Clique sur les étoiles !",
-        "💣 *Cases à éviter* — Ne clique pas sur les bombes !",
+        "🟦 *Cases à éviter* — Ne clique pas sur les cases inconnues !",
         "",
     ]
     if remaining is not None and not is_premium:
@@ -179,7 +179,7 @@ async def cb_cell_tap(call: CallbackQuery):
     if cell_type == "⭐":
         await call.answer("⭐ Case sûre — Clique ici !", show_alert=False)
     elif cell_type == "💣":
-        await call.answer("💣 Mine ! Évite cette case !", show_alert=True)
+        await call.answer("⚠️ Case dangereuse — Évite cette case !", show_alert=True)
     else:
         await call.answer("🟦 Case inconnue", show_alert=False)
 
