@@ -55,7 +55,7 @@ def _is_peak_hour() -> bool:
 
 def _get_signal_time() -> str:
     now = datetime.now(pytz.UTC)
-    return now.strftime("%H:%M:%S")
+    return now.strftime("%H:%M") + " (GMT+00)"
 
 
 def _get_countdown() -> int:
