@@ -68,9 +68,6 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
         f"│◉ *Pièges* : {signal['mines']} mines",
         SEP,
         "",
-        "⭐ *Cases recommandées* — Clique sur les étoiles !",
-        "🟦 *Cases à éviter* — Ne clique pas sur les cases inconnues !",
-        "",
     ]
     if remaining is not None and not is_premium:
         lines.append(f"🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*")
