@@ -1,7 +1,7 @@
 {
   "version": 2,
   "buildCommand": "pnpm --filter @workspace/admin-panel run build",
-  "outputDirectory": "public",
+  "outputDirectory": "artifacts/admin-panel/dist",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
   "functions": {
