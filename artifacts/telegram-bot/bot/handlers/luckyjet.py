@@ -87,8 +87,7 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         reply_markup=luckyjet_after_signal_keyboard(),
     )
     track_signal_message(user.id, call.message.chat.id, call.message.message_id)
-    schedule_delete(call.message.chat.id, call.message.message_id,
-                    delete_in_seconds=signal["countdown"] + 120)
+    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
     await call.answer("✅ Signal généré !")
     logger.info(f"LJ get_signal for user {user.id} (premium={is_premium})")
 
@@ -158,8 +157,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
 
     # Auto-delete 2 minutes after game time
     track_signal_message(user.id, call.message.chat.id, call.message.message_id)
-    schedule_delete(call.message.chat.id, call.message.message_id,
-                    delete_in_seconds=signal["countdown"] + 120)
+    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
 
     await call.answer("✅ Signal généré !")
     logger.info(f"Free LJ {cote_type} signal for user {user.id}")
@@ -231,8 +229,7 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
     )
 
     track_signal_message(user.id, call.message.chat.id, call.message.message_id)
-    schedule_delete(call.message.chat.id, call.message.message_id,
-                    delete_in_seconds=signal["countdown"] + 120)
+    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
 
     await call.answer("⭐ Signal Premium généré !")
     logger.info(f"Premium LJ {cote_type} signal for user {user.id}")

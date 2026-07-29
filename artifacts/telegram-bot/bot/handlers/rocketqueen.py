@@ -83,9 +83,7 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         reply_markup=rocketqueen_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
 
-    # Schedule auto-delete 2 minutes after game time
-    schedule_delete(call.message.chat.id, call.message.message_id,
-                    delete_in_seconds=signal["countdown"] + 120)
+    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
 
     await call.answer("✅ Signal Rocket Queen généré !")
     logger.info(f"Free RQ {cote_type} signal for user {user.id}")
@@ -152,8 +150,7 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
         reply_markup=rocketqueen_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
 
-    schedule_delete(call.message.chat.id, call.message.message_id,
-                    delete_in_seconds=signal["countdown"] + 120)
+    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
 
     await call.answer("⭐ Signal Premium Rocket Queen généré !")
     logger.info(f"Premium RQ {cote_type} signal for user {user.id}")

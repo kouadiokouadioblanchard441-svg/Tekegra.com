@@ -55,7 +55,7 @@ def track_signal_message(user_id: int, chat_id: int, message_id: int) -> None:
 async def _cleaner_loop() -> None:
     """Runs every 30 s; deletes any messages whose time has come."""
     while True:
-        await asyncio.sleep(30)
+        await asyncio.sleep(5)
         if not _pending or _bot is None:
             continue
 
