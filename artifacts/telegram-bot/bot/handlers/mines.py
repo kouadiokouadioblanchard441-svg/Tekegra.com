@@ -61,32 +61,11 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
 
 
 def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -> str:
-    from bot.utils.formatters import _quality_medal, _confidence_bar
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
-    quality = signal.get("quality", "")
-    medal = _quality_medal(quality) if quality else ""
-    confidence = signal.get("confidence", 0)
-    conf_bar = _confidence_bar(confidence) if confidence else ""
-    volatilite = signal.get("volatilite", "")
-    verif = signal.get("verification_code", "")
-    safe_prob = signal.get("safe_probability", 0)
-    rounds = signal.get("rounds_analysed", 0)
-
     lines = [
-        f"💣 *MINES AI PREDICTION* [{badge}] {medal}",
+        f"💣 *MINES PREDICTION* [{badge}]",
         SEP,
-        f"│◉ 💣 *Pièges* : {signal['mines']} mines",
-    ]
-    if safe_prob:
-        lines.append(f"│◉ 📐 *Prob. case sûre* : {safe_prob}%")
-    if confidence:
-        lines.append(f"│◉ 🤖 *Confiance IA* : *{confidence}%*")
-        lines.append(f"│◉ [{conf_bar}]")
-    if volatilite:
-        lines.append(f"│◉ 📊 *Volatilité* : {volatilite}")
-    if rounds:
-        lines.append(f"│◉ 🔬 *Rounds analysés* : {rounds}")
-    lines += [
+        f"│◉ *Pièges* : {signal['mines']} mines 💣",
         SEP,
         "",
         "⭐ *Cases recommandées* — Clique sur les étoiles !",
@@ -96,9 +75,7 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
     if remaining is not None and not is_premium:
         lines.append(f"🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*")
     lines.append(format_countdown(signal["countdown"]))
-    if verif:
-        lines.append(f"│◉ 🔐 *CODE* : `{verif}`")
-    lines.append(f"\n🎁 Code promo: `{settings.BOT_PROMO_CODE}`")
+    lines.append(f"\ncode promo: `{settings.BOT_PROMO_CODE}`")
     return "\n".join(lines)
 
 
