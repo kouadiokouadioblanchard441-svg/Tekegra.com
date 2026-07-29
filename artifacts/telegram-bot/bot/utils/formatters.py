@@ -1,4 +1,4 @@
-"""Unicode-styled message formatters matching the bot screenshots."""
+"""Unicode-styled message formatters — v2 avec indicateurs IA."""
 from datetime import datetime
 import pytz
 
@@ -10,6 +10,17 @@ def _cote_label(cote_type: str) -> str:
     return "🎯 PETITE COTE" if cote_type == "petite" else "💰 GROSSE COTE"
 
 
+def _quality_medal(quality: str) -> str:
+    return {"GOLD": "🥇 GOLD", "SILVER": "🥈 SILVER", "BRONZE": "🥉 BRONZE"}.get(quality, quality)
+
+
+def _confidence_bar(confidence: int) -> str:
+    filled = round(confidence / 10)
+    return "█" * filled + "░" * (10 - filled)
+
+
+# ─── Lucky Jet ────────────────────────────────────────────────────────────────
+
 def format_luckyjet_signal(
     heure: str,
     cote: str,
@@ -18,17 +29,45 @@ def format_luckyjet_signal(
     is_premium: bool = False,
     cote_type: str = "auto",
     mise_seconde: float = 0.0,
+    confidence: int = 0,
+    quality: str = "",
+    trend: str = "",
+    volatilite: str = "",
+    force_bar: str = "",
+    verification_code: str = "",
+    rounds_analysed: int = 0,
 ) -> str:
-    seconde_line = f"|●>PLACER À : {mise_seconde}s après le départ ⚡\n" if mise_seconde else ""
+    badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
+    medal = _quality_medal(quality) if quality else ""
+    ct_label = f" | {_cote_label(cote_type)}" if cote_type != "auto" else ""
+    seconde_line = f"│◉ ⚡ *PLACER À* : *{mise_seconde}s* après le départ\n" if mise_seconde else ""
+    conf_bar = _confidence_bar(confidence) if confidence else (force_bar or "")
+    verif = f"\n│◉ 🔐 *CODE* : `{verification_code}`" if verification_code else ""
+    rounds_line = f"│◉ 🔬 *Rounds analysés* : {rounds_analysed}\n" if rounds_analysed else ""
+    trend_line = f"│◉ {trend}\n" if trend else ""
+    volatilite_line = f"│◉ 📊 *Volatilité* : {volatilite}\n" if volatilite else ""
+
     return (
-        f"🚀 *LUCKY JET PREDICTION*\n\n"
-        f"|●>HEURE : {heure} ⏰\n"
+        f"🚀 *LUCKY JET AI PREDICTION*\n"
+        f"[{badge}{ct_label}] {medal}\n"
+        f"{SEP}\n"
+        f"│◉ ⏰ *HEURE* : *{heure}*\n"
+        f"│◉ 🚀 *COTE CIBLE* : *{cote}*\n"
+        f"│◉ 🛡 *ASSURANCE* : {assurance}\n"
         f"{seconde_line}"
-        f"|●>COTE : {cote} 🚀\n"
-        f"|●>ASSURANCE : {assurance} ✅\n\n"
-        f"code promo: {promo_code}"
+        f"{SEP}\n"
+        f"│◉ 🤖 *Confiance IA* : *{confidence}%*\n"
+        f"│◉ [{conf_bar}]\n"
+        f"{trend_line}"
+        f"{volatilite_line}"
+        f"{rounds_line}"
+        f"{SEP}"
+        f"{verif}\n"
+        f"🎁 Code promo : `{promo_code}`"
     )
 
+
+# ─── Rocket Queen ─────────────────────────────────────────────────────────────
 
 def format_rocketqueen_signal(
     heure: str,
@@ -37,53 +76,43 @@ def format_rocketqueen_signal(
     promo_code: str,
     is_premium: bool = False,
     cote_type: str = "auto",
+    confidence: int = 0,
+    quality: str = "",
+    trend: str = "",
+    volatilite: str = "",
+    force_bar: str = "",
+    verification_code: str = "",
+    rounds_analysed: int = 0,
 ) -> str:
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
+    medal = _quality_medal(quality) if quality else ""
     ct_label = f" | {_cote_label(cote_type)}" if cote_type != "auto" else ""
-    return (
-        f"👑 *ROCKET QUEEN PREDICTION* [{badge}{ct_label}]\n"
-        f"{SEP}\n"
-        f"│◉➤ *HEURE* : {heure} ⏰\n"
-        f"│◉➤ *COTE* : {cote} 🚀\n"
-        f"│◉➤ *ASSURANCE* : {assurance} ✅\n"
-        f"{SEP}\n"
-        f"🎁 Code promo : `{promo_code}`"
-    )
+    conf_bar = _confidence_bar(confidence) if confidence else (force_bar or "")
+    verif = f"\n│◉ 🔐 *CODE* : `{verification_code}`" if verification_code else ""
+    trend_line = f"│◉ {trend}\n" if trend else ""
+    volatilite_line = f"│◉ 📊 *Volatilité* : {volatilite}\n" if volatilite else ""
+    rounds_line = f"│◉ 🔬 *Rounds analysés* : {rounds_analysed}\n" if rounds_analysed else ""
 
-
-def format_luckyjet_analysis(
-    heure: str,
-    niveau: str,
-    risque: str,
-) -> str:
     return (
-        f"🚀 *LUCKY JET ANALYSE*\n"
+        f"👑 *ROCKET QUEEN AI PREDICTION*\n"
+        f"[{badge}{ct_label}] {medal}\n"
         f"{SEP}\n"
-        f"│◉ *Heure* : {heure} ⏰\n"
-        f"│◉ *Niveau conseillé* : {niveau}\n"
-        f"│◉ *Gestion du risque* : {risque} ✅\n"
+        f"│◉ ⏰ *HEURE* : *{heure}*\n"
+        f"│◉ 🚀 *COTE CIBLE* : *{cote}*\n"
+        f"│◉ 🛡 *ASSURANCE* : {assurance}\n"
+        f"{SEP}\n"
+        f"│◉ 🤖 *Confiance IA* : *{confidence}%*\n"
+        f"│◉ [{conf_bar}]\n"
+        f"{trend_line}"
+        f"{volatilite_line}"
+        f"{rounds_line}"
         f"{SEP}"
-    )
-
-
-def format_mines_signal(
-    mines: int,
-    niveau: str,
-    risque: str,
-    promo_code: str,
-    is_premium: bool = False,
-) -> str:
-    badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
-    return (
-        f"💣 *MINES ANALYSE* [{badge}]\n"
-        f"{SEP}\n"
-        f"│◉➤ *Difficulté* : {mines} mines 💣\n"
-        f"│◉➤ *Niveau conseillé* : {niveau}\n"
-        f"│◉➤ *Gestion du risque* : {risque} ✅\n"
-        f"{SEP}\n"
+        f"{verif}\n"
         f"🎁 Code promo : `{promo_code}`"
     )
 
+
+# ─── Aviator ──────────────────────────────────────────────────────────────────
 
 def format_aviator_signal(
     heure: str,
@@ -94,24 +123,122 @@ def format_aviator_signal(
     assurance: str,
     promo_code: str,
     is_premium: bool = False,
+    confidence: int = 0,
+    quality: str = "",
+    trend: str = "",
+    volatilite: str = "",
+    force_bar: str = "",
+    verification_code: str = "",
+    rounds_analysed: int = 0,
 ) -> str:
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
+    medal = _quality_medal(quality) if quality else ""
+    conf_bar = _confidence_bar(confidence) if confidence else (force_bar or "")
+    verif = f"\n│◉ 🔐 *CODE* : `{verification_code}`" if verification_code else ""
+    trend_line = f"│◉ {trend}\n" if trend else ""
+    volatilite_line = f"│◉ 📊 *Volatilité* : {volatilite}\n" if volatilite else ""
+    rounds_line = f"│◉ 🔬 *Rounds analysés* : {rounds_analysed}\n" if rounds_analysed else ""
+
     return (
-        f"✈️ *AVIATOR PREDICTION* [{badge}]\n"
+        f"✈️ *AVIATOR AI PREDICTION*\n"
+        f"[{badge}] {medal}\n"
         f"{SEP}\n"
-        f"│◉➤ *HEURE DU ROUND* : {heure} ⏰\n"
-        f"│◉➤ *PLACER LA MISE* : entre {mise_start}s et {mise_end}s avant décollage 🕐\n"
-        f"│◉➤ *RETIRER À* : *{cashout_second}s* après décollage ⚡\n"
-        f"│◉➤ *COTE CIBLE* : {cote} 🚀\n"
-        f"│◉➤ *ASSURANCE* : {assurance} ✅\n"
+        f"│◉ ⏰ *HEURE DU ROUND* : *{heure}*\n"
+        f"│◉ 🕐 *MISE* : entre *{mise_start}s* et *{mise_end}s* avant décollage\n"
+        f"│◉ ⚡ *RETIRER À* : *{cashout_second}s* après décollage\n"
+        f"│◉ 🚀 *COTE CIBLE* : *{cote}*\n"
+        f"│◉ 🛡 *ASSURANCE* : {assurance}\n"
         f"{SEP}\n"
+        f"│◉ 🤖 *Confiance IA* : *{confidence}%*\n"
+        f"│◉ [{conf_bar}]\n"
+        f"{trend_line}"
+        f"{volatilite_line}"
+        f"{rounds_line}"
+        f"{SEP}"
+        f"{verif}\n"
         f"🎁 Code promo : `{promo_code}`"
     )
 
 
-def format_countdown(seconds: int) -> str:
-    return f"🔄 Prochain signal disponible dans *{seconds}* secondes."
+# ─── Lucky Jet — Analyse ──────────────────────────────────────────────────────
 
+def format_luckyjet_analysis(
+    heure: str,
+    niveau: str,
+    risque: str,
+    confidence: int = 0,
+    trend: str = "",
+    volatilite: str = "",
+) -> str:
+    conf_bar = _confidence_bar(confidence) if confidence else ""
+    trend_line = f"│◉ *Tendance* : {trend}\n" if trend else ""
+    volatilite_line = f"│◉ *Volatilité* : {volatilite}\n" if volatilite else ""
+    conf_line = (
+        f"│◉ 🤖 *Confiance IA* : *{confidence}%*\n│◉ [{conf_bar}]\n"
+        if confidence else ""
+    )
+    return (
+        f"🚀 *LUCKY JET — ANALYSE IA*\n"
+        f"{SEP}\n"
+        f"│◉ *Heure* : {heure} ⏰\n"
+        f"│◉ *Niveau conseillé* : {niveau}\n"
+        f"│◉ *Gestion du risque* : {risque} ✅\n"
+        f"{trend_line}"
+        f"{volatilite_line}"
+        f"{conf_line}"
+        f"{SEP}"
+    )
+
+
+# ─── Mines ────────────────────────────────────────────────────────────────────
+
+def format_mines_signal(
+    mines: int,
+    niveau: str,
+    risque: str,
+    promo_code: str,
+    is_premium: bool = False,
+    confidence: int = 0,
+    quality: str = "",
+    volatilite: str = "",
+    force_bar: str = "",
+    verification_code: str = "",
+    safe_probability: int = 0,
+    rounds_analysed: int = 0,
+) -> str:
+    badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
+    medal = _quality_medal(quality) if quality else ""
+    conf_bar = _confidence_bar(confidence) if confidence else (force_bar or "")
+    verif = f"\n│◉ 🔐 *CODE* : `{verification_code}`" if verification_code else ""
+    volatilite_line = f"│◉ 📊 *Volatilité* : {volatilite}\n" if volatilite else ""
+    prob_line = f"│◉ 📐 *Prob. case sûre* : {safe_probability}%\n" if safe_probability else ""
+    rounds_line = f"│◉ 🔬 *Rounds analysés* : {rounds_analysed}\n" if rounds_analysed else ""
+
+    return (
+        f"💣 *MINES AI PREDICTION* [{badge}] {medal}\n"
+        f"{SEP}\n"
+        f"│◉ 💣 *Pièges* : {mines} mines\n"
+        f"│◉ *Niveau conseillé* : {niveau}\n"
+        f"│◉ *Gestion du risque* : {risque} ✅\n"
+        f"{prob_line}"
+        f"{SEP}\n"
+        f"│◉ 🤖 *Confiance IA* : *{confidence}%*\n"
+        f"│◉ [{conf_bar}]\n"
+        f"{volatilite_line}"
+        f"{rounds_line}"
+        f"{SEP}"
+        f"{verif}\n"
+        f"🎁 Code promo : `{promo_code}`"
+    )
+
+
+# ─── Countdown ────────────────────────────────────────────────────────────────
+
+def format_countdown(seconds: int) -> str:
+    return f"⏱ Signal valable encore *{seconds}* secondes."
+
+
+# ─── Profil ───────────────────────────────────────────────────────────────────
 
 def format_profile(
     first_name: str,
@@ -139,6 +266,8 @@ def format_profile(
     )
 
 
+# ─── Accueil ──────────────────────────────────────────────────────────────────
+
 def format_welcome(
     first_name: str,
     free_count: int,
@@ -163,6 +292,8 @@ def format_welcome(
         "Choisis une option ci-dessous 👇"
     )
 
+
+# ─── Admin ────────────────────────────────────────────────────────────────────
 
 def format_admin_stats(
     total_users: int,

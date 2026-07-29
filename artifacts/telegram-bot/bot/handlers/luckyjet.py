@@ -72,6 +72,13 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         is_premium=is_premium,
         cote_type=signal.get("cote_type", "auto"),
         mise_seconde=signal.get("mise_seconde", 0.0),
+        confidence=signal.get("confidence", 0),
+        quality=signal.get("quality", ""),
+        trend=signal.get("trend", ""),
+        volatilite=signal.get("volatilite", ""),
+        force_bar=signal.get("force_bar", ""),
+        verification_code=signal.get("verification_code", ""),
+        rounds_analysed=signal.get("rounds_analysed", 0),
     )
 
     await call.message.edit_text(
@@ -131,6 +138,13 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         is_premium=False,
         cote_type=cote_type,
         mise_seconde=signal.get("mise_seconde", 0.0),
+        confidence=signal.get("confidence", 0),
+        quality=signal.get("quality", ""),
+        trend=signal.get("trend", ""),
+        volatilite=signal.get("volatilite", ""),
+        force_bar=signal.get("force_bar", ""),
+        verification_code=signal.get("verification_code", ""),
+        rounds_analysed=signal.get("rounds_analysed", 0),
     )
 
     await call.message.edit_text(
@@ -196,6 +210,13 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         is_premium=True,
         cote_type=cote_type,
         mise_seconde=signal.get("mise_seconde", 0.0),
+        confidence=signal.get("confidence", 0),
+        quality=signal.get("quality", ""),
+        trend=signal.get("trend", ""),
+        volatilite=signal.get("volatilite", ""),
+        force_bar=signal.get("force_bar", ""),
+        verification_code=signal.get("verification_code", ""),
+        rounds_analysed=signal.get("rounds_analysed", 0),
     )
 
     await call.message.edit_text(

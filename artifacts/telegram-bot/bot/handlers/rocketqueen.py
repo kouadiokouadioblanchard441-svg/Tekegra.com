@@ -67,6 +67,13 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         cote_type=cote_type,
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=False,
+        confidence=signal.get("confidence", 0),
+        quality=signal.get("quality", ""),
+        trend=signal.get("trend", ""),
+        volatilite=signal.get("volatilite", ""),
+        force_bar=signal.get("force_bar", ""),
+        verification_code=signal.get("verification_code", ""),
+        rounds_analysed=signal.get("rounds_analysed", 0),
     )
     text += f"\n\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*"
     text += f"\n\n{format_countdown(signal['countdown'])}"
@@ -130,6 +137,13 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
         cote_type=cote_type,
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=True,
+        confidence=signal.get("confidence", 0),
+        quality=signal.get("quality", ""),
+        trend=signal.get("trend", ""),
+        volatilite=signal.get("volatilite", ""),
+        force_bar=signal.get("force_bar", ""),
+        verification_code=signal.get("verification_code", ""),
+        rounds_analysed=signal.get("rounds_analysed", 0),
     )
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
