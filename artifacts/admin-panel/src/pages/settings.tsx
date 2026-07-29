@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@/lib/api-client-react/src/generated/api"
 import { useQueryClient } from "@tanstack/react-query"
@@ -7,17 +7,50 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { Loader2, Save, Image as ImageIcon } from "lucide-react"
+import { Loader2, Save, Image as ImageIcon, Lock } from "lucide-react"
 import { Loader } from "@/components/ui/loader"
+import { customFetch } from "@workspace/api-client-react"
 
 export default function Settings() {
   const queryClient = useQueryClient()
   const { data: settings, isLoading } = useGetSettings()
   const updateMutation = useUpdateSettings()
-  
+  const [pwdLoading, setPwdLoading] = useState(false)
+
   const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
     defaultValues: settings || {}
   })
+
+  const {
+    register: registerPwd,
+    handleSubmit: handlePwdSubmit,
+    reset: resetPwd,
+    formState: { errors: pwdErrors },
+    watch,
+  } = useForm<{ currentPassword: string; newPassword: string; confirmPassword: string }>()
+
+  const newPasswordValue = watch("newPassword")
+
+  const onChangePassword = async (data: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
+    if (data.newPassword !== data.confirmPassword) {
+      toast.error("Les nouveaux mots de passe ne correspondent pas")
+      return
+    }
+    setPwdLoading(true)
+    try {
+      await customFetch("/api/admin/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword: data.currentPassword, newPassword: data.newPassword }),
+        headers: { "Content-Type": "application/json" },
+      })
+      toast.success("Mot de passe mis à jour avec succès")
+      resetPwd()
+    } catch (e: any) {
+      toast.error(e?.message || "Erreur lors du changement de mot de passe")
+    } finally {
+      setPwdLoading(false)
+    }
+  }
 
   // Update form when data loads
   useEffect(() => {

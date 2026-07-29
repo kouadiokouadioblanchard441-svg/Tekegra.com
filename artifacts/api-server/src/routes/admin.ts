@@ -1,21 +1,87 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import { pool } from "@workspace/db";
 import { requireAuth, signToken } from "../middleware/auth.js";
 
 const router = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin1234";
+const ENV_PASSWORD = process.env.ADMIN_PASSWORD || "admin1234";
+
+/** Récupère le hash du mot de passe depuis bot_settings, ou null si absent */
+async function getStoredPasswordHash(): Promise<string | null> {
+  const { rows } = await pool.query(
+    `SELECT value FROM bot_settings WHERE key = 'admin_password_hash' LIMIT 1`
+  );
+  return rows[0]?.value ?? null;
+}
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 router.post("/admin/login", async (req, res) => {
   const { password } = req.body as { password?: string };
-  if (!password || password !== ADMIN_PASSWORD) {
+  if (!password) {
     res.status(401).json({ error: "Invalid password" });
     return;
   }
-  const token = signToken();
-  res.json({ token });
+
+  try {
+    const hash = await getStoredPasswordHash();
+    const valid = hash
+      ? await bcrypt.compare(password, hash)   // mot de passe DB (hashé)
+      : password === ENV_PASSWORD;             // fallback variable d'environnement
+
+    if (!valid) {
+      res.status(401).json({ error: "Invalid password" });
+      return;
+    }
+    const token = signToken();
+    res.json({ token });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Change password ──────────────────────────────────────────────────────────
+
+router.post("/admin/change-password", requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body as {
+    currentPassword?: string;
+    newPassword?: string;
+  };
+
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: "currentPassword and newPassword are required" });
+    return;
+  }
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "New password must be at least 6 characters" });
+    return;
+  }
+
+  try {
+    // Vérifie le mot de passe actuel (DB ou env)
+    const hash = await getStoredPasswordHash();
+    const validCurrent = hash
+      ? await bcrypt.compare(currentPassword, hash)
+      : currentPassword === ENV_PASSWORD;
+
+    if (!validCurrent) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+
+    // Hash le nouveau mot de passe et l'enregistre dans bot_settings
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await pool.query(`
+      INSERT INTO bot_settings (key, value)
+      VALUES ('admin_password_hash', $1)
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+    `, [newHash]);
+
+    res.json({ success: true, message: "Password updated successfully" });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
