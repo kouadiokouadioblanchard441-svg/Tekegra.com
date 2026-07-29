@@ -60,18 +60,37 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
     logger.info(f"Mines get_signal for user {user.id} (premium={is_premium})")
 
 
+def _render_grid_text(grid: list[list[str]]) -> str:
+    """Render the 5×5 grid as compact text. ⭐ stays visible, mines hidden as ▫️."""
+    rows = []
+    for row in grid:
+        cells = []
+        for cell in row:
+            if cell == "⭐":
+                cells.append("⭐")
+            else:
+                cells.append("▫️")
+        rows.append("".join(cells))
+    return "\n".join(rows)
+
+
 def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -> str:
     badge = "⭐ PREMIUM" if is_premium else "🎯 GRATUIT"
+    grid_text = _render_grid_text(signal.get("grid", []))
     lines = [
         f"🎯 *MINES PREDICTION* [{badge}]",
         SEP,
-        f"│◉ *Pièges* : {signal['mines']} mines",
+        f"|●>*PIÈGES : {signal['mines']} mines* 💣",
+        f"|●>*RISQUE : {signal['risque']}* ⚠️",
+        f"|●>*CONFIANCE : {signal['confidence']}%* 🎯",
         SEP,
+        "",
+        grid_text,
         "",
     ]
     if remaining is not None and not is_premium:
         lines.append(f"🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*")
-    lines.append(f"\ncode promo: `{settings.BOT_PROMO_CODE}`")
+    lines.append(f"🎁 code promo: `{settings.BOT_PROMO_CODE}`")
     return "\n".join(lines)
 
 

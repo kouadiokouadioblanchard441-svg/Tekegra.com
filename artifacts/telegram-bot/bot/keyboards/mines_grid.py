@@ -17,22 +17,7 @@ def mines_grid_keyboard(
     """
     buttons = []
 
-    # 5×5 grid rows
-    for row_idx, row in enumerate(grid):
-        button_row = []
-        for col_idx, cell in enumerate(row):
-            pos = row_idx * 5 + col_idx
-            # All cells are non-interactive display buttons
-            display = "🟦" if cell == "💣" else cell
-            button_row.append(
-                InlineKeyboardButton(
-                    text=display,
-                    callback_data=f"mines:cell:{pos}:{cell}",
-                )
-            )
-        buttons.append(button_row)
-
-    # Action row below the grid
+    # Action row — grid is now displayed as text in the message body
     action_row = [
         InlineKeyboardButton(text="🔄 Nouveau signal", callback_data="mines:signal_free"),
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:mines"),
