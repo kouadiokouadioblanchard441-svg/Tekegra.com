@@ -1,61 +1,41 @@
 # Lucky Jet AI Bot
 
-A Telegram bot for Lucky Jet signals with a React admin panel and Node.js/Express API server.
+Bot Telegram de signaux Lucky Jet avec panneau d'administration React et API Node.js.
 
 ## Architecture
 
-| Layer | Stack | Path |
-|-------|-------|------|
-| Telegram Bot | Python 3.12, aiogram 3, FastAPI, SQLAlchemy + asyncpg | `artifacts/telegram-bot/` |
-| Admin Panel | React, Vite, Tailwind, shadcn/ui | `artifacts/admin-panel/` |
-| API Server | Node.js, Express 5, Drizzle ORM, pg | `artifacts/api-server/` |
-| DB Library | Drizzle ORM schema (shared) | `lib/db/` |
-| API Spec | Zod schemas + OpenAPI spec | `lib/api-spec/`, `lib/api-zod/` |
+| Composant | Technologie | Chemin |
+|-----------|-------------|--------|
+| Bot Telegram | Python 3.12 / Aiogram 3 / FastAPI | `artifacts/telegram-bot/` |
+| Panneau admin | React / Vite | `artifacts/admin-panel/` |
+| API backend | Node.js / Express / TypeScript | `artifacts/api-server/` |
+| Base de données | Supabase PostgreSQL | via `SUPABASE_DATABASE_URL` |
 
-Database: **Supabase PostgreSQL** (shared by bot and API server).
+## Lancer le projet
 
-## Running on Replit
-
-### Workflows
+Les trois services démarrent automatiquement via les workflows Replit :
 
 - **Telegram Bot** — `cd artifacts/telegram-bot && pip install -r requirements.txt && python main.py`
-- **API Server** — `pnpm --filter @workspace/api-server run dev` (port 8080)
-- **Admin Panel** — `pnpm --filter @workspace/admin-panel run dev` (port assigned by Replit)
+- **API Server** — `pnpm --filter @workspace/api-server run dev`
+- **Admin Panel** — `pnpm --filter @workspace/admin-panel run dev`
 
-### Required secrets (set via Replit Secrets)
+## Secrets requis
 
-| Secret | Description |
-|--------|-------------|
-| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather |
-| `DATABASE_URL` | Supabase Session pooler URL, port **5432** |
-| `ADMIN_PASSWORD` | Password for the admin panel |
-| `SESSION_SECRET` | JWT signing secret (32+ chars) ✅ already set |
+| Clé | Description |
+|-----|-------------|
+| `SUPABASE_DATABASE_URL` | URL Session pooler Supabase (port 5432) |
+| `TELEGRAM_BOT_TOKEN` | Token du bot (@BotFather) |
+| `ADMIN_PASSWORD` | Mot de passe panneau admin |
 
-### Already configured env vars
+## Variables d'environnement (optionnelles)
 
-| Variable | Value |
-|----------|-------|
-| `ADMIN_IDS` | `8537454742` |
-| `BOT_NAME` | `Lucky Jet AI Bot` |
-| `BOT_PROMO_CODE` | `JRYVES` |
-| `FREE_SIGNALS_PER_DAY` | `6` |
-| `PREMIUM_SIGNALS_PER_DAY` | `9` |
-| `ENVIRONMENT` | `production` |
-| `LOG_LEVEL` | `INFO` |
+Voir `DEPLOY.md` pour la liste complète (`ADMIN_IDS`, `CHANNEL_1_ID`, `BOT_PROMO_CODE`, etc.).
 
-### Database setup (first run)
+## Déploiement Vercel
 
-```bash
-cd lib/db && pnpm run push
-```
-
-## Deployment (Vercel)
-
-See `DEPLOY.md` for the full Vercel deployment guide. The project deploys as:
-- `/` → Admin Panel (React, static)
-- `/api/*` → API Server (Express, serverless)
-- `/webhook` → Telegram Bot (Python, serverless)
+Voir `DEPLOY.md` — le projet est conçu pour Vercel + Supabase.  
+Après déploiement, enregistrer le webhook via : `https://TON-APP.vercel.app/setup?token=ADMIN_PASSWORD`
 
 ## User preferences
 
-- Keep existing project structure — do not restructure or migrate without asking.
+- Langue de communication : français
