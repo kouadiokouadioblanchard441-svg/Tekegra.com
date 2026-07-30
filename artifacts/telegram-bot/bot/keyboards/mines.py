@@ -1,6 +1,21 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
+def mines_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup:
+    """Écran de choix : Gratuit ou Premium."""
+    if remaining > 0:
+        free_label = f"💣 Signal Gratuit ({remaining}/{total} restants)"
+    else:
+        free_label = f"⛔ Gratuit épuisé ({total}/{total} utilisés)"
+
+    buttons = [
+        [InlineKeyboardButton(text=free_label, callback_data="mines:signal_free")],
+        [InlineKeyboardButton(text="⭐ Signal Premium", callback_data="mines:signal_premium")],
+        [InlineKeyboardButton(text="↩ Retour", callback_data="menu:mines")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def mines_menu_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [

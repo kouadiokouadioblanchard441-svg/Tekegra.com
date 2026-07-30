@@ -52,7 +52,7 @@ def game_select_keyboard() -> InlineKeyboardMarkup:
 # ── Lucky Jet signal page ─────────────────────────────────────────────────────
 def luckyjet_page_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎯 GET SIGNAL", callback_data="lj:get_signal")],
+        [InlineKeyboardButton(text="🎯 GET SIGNAL", callback_data="lj:choose_type")],
         [InlineKeyboardButton(text="↩ Back", callback_data="menu:game_select")],
     ])
 
@@ -60,7 +60,7 @@ def luckyjet_page_keyboard() -> InlineKeyboardMarkup:
 # ── Mines signal page ─────────────────────────────────────────────────────────
 def mines_page_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💣 GET SIGNAL", callback_data="mines:get_signal")],
+        [InlineKeyboardButton(text="💣 GET SIGNAL", callback_data="mines:choose_type")],
         [InlineKeyboardButton(text="↩ Back", callback_data="menu:game_select")],
     ])
 

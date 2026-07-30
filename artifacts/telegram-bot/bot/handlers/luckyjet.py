@@ -14,6 +14,7 @@ from bot.keyboards.luckyjet import (
     luckyjet_menu_keyboard,
     luckyjet_after_signal_keyboard,
     luckyjet_after_premium_keyboard,
+    luckyjet_choose_keyboard,
 )
 from bot.keyboards.premium import premium_locked_keyboard
 from config import settings
@@ -22,6 +23,38 @@ from loguru import logger
 router = Router()
 
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
+
+
+# ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
+@router.callback_query(F.data == "lj:choose_type")
+async def cb_lj_choose_type(call: CallbackQuery, session: AsyncSession):
+    """Affiche le choix Gratuit / Premium avant de générer le signal."""
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+    remaining = settings.FREE_SIGNALS_TOTAL - db_user.free_signals_used_total
+    remaining = max(0, remaining)
+
+    text = (
+        "🎯 *LUCKY JET — Choisissez votre signal*\n\n"
+        f"{SEP}\n"
+        f"│◉ Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*\n"
+        f"│◉ Premium : signaux *illimités* ⭐\n"
+        f"{SEP}\n\n"
+        "👇 Sélectionnez le type de signal :"
+    )
+    await call.message.edit_text(
+        text,
+        parse_mode="Markdown",
+        reply_markup=luckyjet_choose_keyboard(remaining, settings.FREE_SIGNALS_TOTAL),
+    )
+    await call.answer()
 
 
 # ── Simplified GET SIGNAL (new menu flow) ─────────────────────────────────────

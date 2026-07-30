@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.signals import generate_mines_signal
 from bot.services.user_service import UserService
 from bot.utils.formatters import format_mines_signal, format_countdown
-from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard
+from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard, mines_choose_keyboard
 from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
 from config import settings
@@ -16,6 +16,38 @@ from loguru import logger
 router = Router()
 
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
+
+
+# ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
+@router.callback_query(F.data == "mines:choose_type")
+async def cb_mines_choose_type(call: CallbackQuery, session: AsyncSession):
+    """Affiche le choix Gratuit / Premium avant de générer la grille."""
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+    remaining = settings.FREE_SIGNALS_TOTAL - db_user.free_signals_used_total
+    remaining = max(0, remaining)
+
+    text = (
+        "💣 *MINES — Choisissez votre signal*\n\n"
+        f"{SEP}\n"
+        f"│◉ Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*\n"
+        f"│◉ Premium : signaux *illimités* ⭐\n"
+        f"{SEP}\n\n"
+        "👇 Sélectionnez le type de signal :"
+    )
+    await call.message.edit_text(
+        text,
+        parse_mode="Markdown",
+        reply_markup=mines_choose_keyboard(remaining, settings.FREE_SIGNALS_TOTAL),
+    )
+    await call.answer()
 
 
 # ── Simplified GET SIGNAL (new menu flow) ─────────────────────────────────────

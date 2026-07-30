@@ -2,6 +2,21 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
+def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup:
+    """Écran de choix : Gratuit ou Premium."""
+    if remaining > 0:
+        free_label = f"🎯 Signal Gratuit ({remaining}/{total} restants)"
+    else:
+        free_label = f"⛔ Gratuit épuisé ({total}/{total} utilisés)"
+
+    buttons = [
+        [InlineKeyboardButton(text=free_label, callback_data="lj:get_signal")],
+        [InlineKeyboardButton(text="⭐ Signal Premium", callback_data="lj:signal_premium:grosse")],
+        [InlineKeyboardButton(text="↩ Retour", callback_data="menu:luckyjet")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [
