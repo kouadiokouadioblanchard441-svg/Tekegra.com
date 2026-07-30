@@ -280,6 +280,7 @@ router.get("/admin/settings", requireAuth, async (_req, res) => {
     "promo_code","affiliate_link",
     "free_signals_per_day","premium_signals_per_day",
     "channel_1_link","channel_1_name","channel_2_link","channel_2_name",
+    "support_username",
     "menu_banner","register_banner","luckyjet_banner","mines_banner","guide_banner",
   ];
   const { rows } = await pool.query(
@@ -297,6 +298,7 @@ router.get("/admin/settings", requireAuth, async (_req, res) => {
     channel1Name:         map["channel_1_name"]          ?? "",
     channel2Link:         map["channel_2_link"]          ?? "",
     channel2Name:         map["channel_2_name"]          ?? "",
+    supportUsername:      map["support_username"]        ?? "",
     menuBanner:           map["menu_banner"]              ?? null,
     registerBanner:       map["register_banner"]          ?? null,
     luckyjetBanner:       map["luckyjet_banner"]          ?? null,
@@ -317,6 +319,7 @@ router.put("/admin/settings", requireAuth, async (req, res) => {
     channel1Name:         "channel_1_name",
     channel2Link:         "channel_2_link",
     channel2Name:         "channel_2_name",
+    supportUsername:      "support_username",
   };
 
   for (const [jsKey, dbKey] of Object.entries(mapping)) {

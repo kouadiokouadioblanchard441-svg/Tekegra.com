@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.services.premium_service import PremiumService
 from bot.services.user_service import UserService
+from bot.services.settings_service import BotSettingsService
 from bot.keyboards.premium import premium_keyboard
 from bot.keyboards.main_menu import back_to_main_keyboard
 from config import settings
@@ -18,7 +19,7 @@ async def show_premium(event: Message | CallbackQuery):
     text = (
         "⭐ *PREMIUM — Avantages*\n\n"
         f"{SEP}\n"
-        f"│◉ *{settings.PREMIUM_SIGNALS_PER_DAY} signaux/jour* (vs {settings.FREE_SIGNALS_PER_DAY} gratuits)\n"
+        "│◉ Signaux illimités : *24h/24*\n"
         "│◉ Cotes ultra-élevées (jusqu'à *25x+*)\n"
         "│◉ Analyses IA avancées\n"
         "│◉ Accès aux 2 jeux (Lucky Jet + Mines)\n"
@@ -35,10 +36,17 @@ async def show_premium(event: Message | CallbackQuery):
 
 
 @router.callback_query(F.data.startswith("premium:buy_"))
-async def cb_buy_premium(call: CallbackQuery):
+async def cb_buy_premium(call: CallbackQuery, session: AsyncSession):
     days = call.data.split("_")[-1]
     price_map = {"7": "9.99$", "30": "29.99$"}
     price = price_map.get(days, "?")
+
+    # Lire le username de support depuis la DB (configurable via panneau admin)
+    svc = BotSettingsService(session)
+    support_username = await svc.get("support_username", "")
+    if support_username and not support_username.startswith("@"):
+        support_username = f"@{support_username}"
+    support_line = f"\n👤 Contacter : *{support_username}*\n" if support_username else "\n"
 
     text = (
         f"⭐ *Activation Premium — {days} jours*\n\n"
@@ -46,8 +54,10 @@ async def cb_buy_premium(call: CallbackQuery):
         f"│◉ Durée : *{days} jours*\n"
         f"│◉ Prix : *{price}*\n"
         f"{SEP}\n\n"
-        "📩 Pour activer votre abonnement, contactez notre support en mentionnant votre ID Telegram.\n\n"
-        f"🆔 Votre ID : `{call.from_user.id}`\n\n"
+        "📩 Pour activer votre abonnement, contactez notre support en mentionnant votre ID Telegram.\n"
+        f"{support_line}"
+        f"🆔 Votre ID : `{call.from_user.id}`\n"
+        f"👤 Votre username : @{call.from_user.username or '—'}\n\n"
         f"📣 Code promo : `{settings.BOT_PROMO_CODE}`"
     )
     await call.message.edit_text(text, parse_mode="Markdown", reply_markup=premium_keyboard())

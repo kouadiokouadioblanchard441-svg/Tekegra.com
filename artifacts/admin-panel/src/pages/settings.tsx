@@ -66,6 +66,7 @@ export default function Settings() {
       channel1Name: data.channel1Name,
       channel2Link: data.channel2Link,
       channel2Name: data.channel2Name,
+      supportUsername: data.supportUsername,
     }
     updateMutation.mutate(
       { data: payload },
@@ -112,6 +113,11 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label htmlFor="affiliateLink">Lien d'affiliation</Label>
                 <Input id="affiliateLink" {...register("affiliateLink")} placeholder="https://1w..." />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supportUsername">Username Telegram support (paiements)</Label>
+                <Input id="supportUsername" {...register("supportUsername")} placeholder="ex: monusername (sans @)" />
+                <p className="text-xs text-muted-foreground">Affiché dans le message d'activation Premium pour que les utilisateurs te contactent.</p>
               </div>
             </CardContent>
           </Card>

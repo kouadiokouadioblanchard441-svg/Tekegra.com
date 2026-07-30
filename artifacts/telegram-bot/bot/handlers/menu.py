@@ -220,7 +220,7 @@ async def cb_premium_menu(call: CallbackQuery, session: AsyncSession):
     text = (
         "⭐ *PREMIUM — Avantages*\n\n"
         f"{SEP}\n"
-        f"│◉ Signaux illimités : *{settings.PREMIUM_SIGNALS_PER_DAY}/jour*\n"
+        "│◉ Signaux illimités : *24h/24*\n"
         "│◉ Cotes ultra-élevées (jusqu'à 25x+)\n"
         "│◉ Analyses IA avancées\n"
         "│◉ Priorité sur les signaux\n"
