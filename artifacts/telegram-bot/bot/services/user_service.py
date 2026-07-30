@@ -96,41 +96,27 @@ class UserService:
         return result.scalars().all()
 
     async def try_consume_free_signal(self, user: User) -> tuple[bool, int]:
-        """Atomically check and consume a free signal in one DB round-trip.
+        """Atomically check and consume a free signal (quota total à vie).
 
         Returns (allowed, remaining_after_consume).
         """
-        today = date.today().isoformat()
-
-        if user.last_signal_date != today:
-            user.free_signals_used_today = 0
-            user.last_signal_date = today
-
-        if user.free_signals_used_today >= settings.FREE_SIGNALS_PER_DAY:
-            await self.session.commit()
+        if user.free_signals_used_total >= settings.FREE_SIGNALS_TOTAL:
             return False, 0
 
-        user.free_signals_used_today += 1
+        user.free_signals_used_total += 1
         user.total_analyses += 1
         await self.session.commit()
-        remaining = settings.FREE_SIGNALS_PER_DAY - user.free_signals_used_today
+        remaining = settings.FREE_SIGNALS_TOTAL - user.free_signals_used_total
         return True, remaining
 
     async def can_use_free_signal(self, user: User) -> bool:
-        today = date.today().isoformat()
-        if user.last_signal_date != today:
-            return True
-        return user.free_signals_used_today < settings.FREE_SIGNALS_PER_DAY
+        return user.free_signals_used_total < settings.FREE_SIGNALS_TOTAL
 
     async def consume_free_signal(self, user: User) -> int:
-        today = date.today().isoformat()
-        if user.last_signal_date != today:
-            user.free_signals_used_today = 0
-            user.last_signal_date = today
-        user.free_signals_used_today += 1
+        user.free_signals_used_total += 1
         user.total_analyses += 1
         await self.session.commit()
-        return settings.FREE_SIGNALS_PER_DAY - user.free_signals_used_today
+        return settings.FREE_SIGNALS_TOTAL - user.free_signals_used_total
 
     async def consume_premium_signal(self, user: User) -> None:
         user.total_analyses += 1

@@ -52,14 +52,14 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         allowed, remaining = await svc.try_consume_free_signal(db_user)
         if not allowed:
             text = (
-                f"⛔ *Limite journalière atteinte*\n\n{SEP}\n"
-                f"│◉ Limite : *{settings.FREE_SIGNALS_PER_DAY} signaux/jour*\n"
-                "│◉ Renouvellement : minuit UTC\n"
-                f"{SEP}\n\n⭐ Passe en *Premium* pour des signaux illimités !"
+                f"⛔ *Quota gratuit épuisé*\n\n{SEP}\n"
+                f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
+                f"│◉ Passe Premium pour continuer 🚀\n"
+                f"{SEP}\n\n⭐ Abonne-toi pour des signaux *illimités* !"
             )
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
-            await call.answer("⛔ Limite atteinte")
+            await call.answer("⛔ Quota gratuit épuisé")
             return
         signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
 
@@ -116,17 +116,16 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
         text = (
-            f"⛔ *Limite journalière atteinte*\n\n"
+            f"⛔ *Quota gratuit épuisé*\n\n"
             f"{SEP}\n"
-            f"│◉ Tu as utilisé tous tes signaux gratuits\n"
-            f"│◉ Limite : *{settings.FREE_SIGNALS_PER_DAY} signaux/jour*\n"
-            f"│◉ Renouvellement : minuit UTC\n"
+            f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
+            f"│◉ Passe Premium pour continuer 🚀\n"
             f"{SEP}\n\n"
-            "⭐ Passe en *Premium* pour des signaux illimités !"
+            "⭐ Abonne-toi pour des signaux *illimités* !"
         )
         await call.message.edit_text(text, parse_mode="Markdown",
                                      reply_markup=premium_locked_keyboard())
-        await call.answer("⛔ Limite atteinte")
+        await call.answer("⛔ Quota gratuit épuisé")
         return
 
     signal = generate_luckyjet_signal(is_premium=False, cote_type=cote_type)

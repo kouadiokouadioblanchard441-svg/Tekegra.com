@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     BOT_PROMO_CODE: str = "JRYVES"
     BOT_AFFILIATE_LINK: str = "https://1win.com"
     BOT_NAME: str = "Lucky Jet AI Bot"
-    FREE_SIGNALS_PER_DAY: int = 6
+    FREE_SIGNALS_TOTAL: int = 10       # total à vie pour les gratuits
+    FREE_SIGNALS_PER_DAY: int = 10    # gardé pour compatibilité (non utilisé)
     PREMIUM_SIGNALS_PER_DAY: int = 9
 
     # Database (accepts DATABASE_URL or SUPABASE_DATABASE_URL)

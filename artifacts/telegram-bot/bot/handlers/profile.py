@@ -30,7 +30,12 @@ async def show_profile(event: Message | CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    max_signals = settings.PREMIUM_SIGNALS_PER_DAY if db_user.is_premium else settings.FREE_SIGNALS_PER_DAY
+    if db_user.is_premium:
+        signals_used = db_user.total_analyses
+        max_signals = settings.PREMIUM_SIGNALS_PER_DAY
+    else:
+        signals_used = db_user.free_signals_used_total
+        max_signals = settings.FREE_SIGNALS_TOTAL
     lang_name = LANG_NAMES.get(db_user.language_code, db_user.language_code)
 
     text = format_profile(
@@ -40,7 +45,7 @@ async def show_profile(event: Message | CallbackQuery, session: AsyncSession):
         total_analyses=db_user.total_analyses,
         is_premium=db_user.is_premium,
         language=lang_name,
-        signals_today=db_user.free_signals_used_today,
+        signals_today=signals_used,
         max_signals=max_signals,
     )
 

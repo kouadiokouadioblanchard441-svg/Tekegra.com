@@ -29,8 +29,9 @@ class User(Base):
 
     # Counters
     total_analyses = Column(Integer, default=0)
-    free_signals_used_today = Column(Integer, default=0)
-    last_signal_date = Column(String(20), nullable=True)  # YYYY-MM-DD
+    free_signals_used_today = Column(Integer, default=0)   # conservé (ne plus utiliser)
+    last_signal_date = Column(String(20), nullable=True)   # conservé (ne plus utiliser)
+    free_signals_used_total = Column(Integer, default=0)   # total à vie
 
     history = relationship("SignalHistory", back_populates="user")
     premium_info = relationship("PremiumSubscription", back_populates="user", uselist=False)

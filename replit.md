@@ -1,41 +1,55 @@
 # Lucky Jet AI Bot
 
-Bot Telegram de signaux Lucky Jet avec panneau d'administration React et API Node.js.
+Un bot Telegram de signaux de jeu (Lucky Jet / Mines / Rocket Queen) avec panneau d'administration React et API Node.js.
 
 ## Architecture
 
-| Composant | Technologie | Chemin |
-|-----------|-------------|--------|
-| Bot Telegram | Python 3.12 / Aiogram 3 / FastAPI | `artifacts/telegram-bot/` |
-| Panneau admin | React / Vite | `artifacts/admin-panel/` |
-| API backend | Node.js / Express / TypeScript | `artifacts/api-server/` |
-| Base de données | Supabase PostgreSQL | via `SUPABASE_DATABASE_URL` |
+| Composant | Stack | Emplacement |
+|-----------|-------|-------------|
+| Bot Telegram | Python 3 / aiogram 3 / SQLAlchemy | `artifacts/telegram-bot/` |
+| Panneau Admin | React / Vite / TypeScript | `artifacts/admin-panel/` |
+| API Server | Node.js / Express / TypeScript | `artifacts/api-server/` |
+| Base de données | Supabase PostgreSQL (asyncpg) | variable `SUPABASE_DATABASE_URL` |
 
 ## Lancer le projet
 
-Les trois services démarrent automatiquement via les workflows Replit :
+### Bot Telegram (workflow principal)
+Le workflow **"Telegram Bot"** démarre automatiquement :
+```
+cd artifacts/telegram-bot && pip install -r requirements.txt && python main.py
+```
 
-- **Telegram Bot** — `cd artifacts/telegram-bot && pip install -r requirements.txt && python main.py`
-- **API Server** — `pnpm --filter @workspace/api-server run dev`
-- **Admin Panel** — `pnpm --filter @workspace/admin-panel run dev`
+### Admin Panel & API
+```bash
+pnpm install          # à la racine du projet
+pnpm --filter @workspace/admin-panel run dev
+pnpm --filter @workspace/api-server run dev
+```
 
-## Secrets requis
+## Variables d'environnement requises (Replit Secrets)
 
-| Clé | Description |
-|-----|-------------|
-| `SUPABASE_DATABASE_URL` | URL Session pooler Supabase (port 5432) |
+| Variable | Description |
+|----------|-------------|
 | `TELEGRAM_BOT_TOKEN` | Token du bot (@BotFather) |
-| `ADMIN_PASSWORD` | Mot de passe panneau admin |
+| `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) |
+| `ADMIN_IDS` | IDs Telegram des admins, séparés par virgule |
+| `SESSION_SECRET` | Clé JWT pour le panneau admin |
 
-## Variables d'environnement (optionnelles)
+## Variables optionnelles
 
-Voir `DEPLOY.md` pour la liste complète (`ADMIN_IDS`, `CHANNEL_1_ID`, `BOT_PROMO_CODE`, etc.).
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `BOT_PROMO_CODE` | `JRYVES` | Code promo 1WIN |
+| `BOT_AFFILIATE_LINK` | `https://1win.com` | Lien d'affiliation |
+| `FREE_SIGNALS_PER_DAY` | `6` | Signaux gratuits/jour |
+| `PREMIUM_SIGNALS_PER_DAY` | `9` | Signaux premium/jour |
+| `CHANNEL_1_ID` / `CHANNEL_1_LINK` / `CHANNEL_1_NAME` | — | Chaîne obligatoire 1 |
+| `CHANNEL_2_ID` / `CHANNEL_2_LINK` / `CHANNEL_2_NAME` | — | Chaîne obligatoire 2 |
 
 ## Déploiement Vercel
 
-Voir `DEPLOY.md` — le projet est conçu pour Vercel + Supabase.  
-Après déploiement, enregistrer le webhook via : `https://TON-APP.vercel.app/setup?token=ADMIN_PASSWORD`
+Voir `DEPLOY.md` pour le guide complet de déploiement sur Vercel avec webhook Telegram.
 
 ## User preferences
 
-- Langue de communication : français
+- Communication en français

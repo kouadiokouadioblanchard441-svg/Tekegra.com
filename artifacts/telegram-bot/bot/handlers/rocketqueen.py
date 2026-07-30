@@ -45,16 +45,16 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
         text = (
-            f"⛔ *Limite journalière atteinte*\n\n"
+            f"⛔ *Quota gratuit épuisé*\n\n"
             f"{SEP}\n"
-            f"│◉ Limite : *{settings.FREE_SIGNALS_PER_DAY} signaux/jour*\n"
-            f"│◉ Renouvellement : minuit UTC\n"
+            f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
+            f"│◉ Passe Premium pour continuer 🚀\n"
             f"{SEP}\n\n"
-            "⭐ Passe en *Premium* pour des signaux illimités !"
+            "⭐ Abonne-toi pour des signaux *illimités* !"
         )
         await call.message.edit_text(text, parse_mode="Markdown",
                                      reply_markup=premium_locked_keyboard())
-        await call.answer("⛔ Limite atteinte")
+        await call.answer("⛔ Quota gratuit épuisé")
         return
 
     signal = generate_rocketqueen_signal(is_premium=False, cote_type=cote_type)
@@ -75,7 +75,7 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         verification_code=signal.get("verification_code", ""),
         rounds_analysed=signal.get("rounds_analysed", 0),
     )
-    text += f"\n\n🎯 Signaux restants : *{remaining}/{settings.FREE_SIGNALS_PER_DAY}*"
+    text += f"\n\n🎯 Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*"
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
     await call.message.edit_text(

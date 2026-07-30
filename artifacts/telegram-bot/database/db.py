@@ -112,4 +112,8 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
             "has_registered BOOLEAN NOT NULL DEFAULT false"
         ))
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+            "free_signals_used_total INTEGER NOT NULL DEFAULT 0"
+        ))
     logger.info("✅ Database tables initialized")
