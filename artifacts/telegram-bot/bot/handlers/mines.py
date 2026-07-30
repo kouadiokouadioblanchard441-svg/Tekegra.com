@@ -53,6 +53,7 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
                                          reply_markup=premium_locked_keyboard())
             await call.answer("⛔ Limite atteinte")
             return
+        signal = generate_mines_signal(is_premium=False)
 
     await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
     await _show_mines_grid(call, signal, is_premium=is_premium)
