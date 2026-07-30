@@ -421,6 +421,12 @@ components:
           type: string
         channel2Name:
           type: string
+        supportUsername:
+          type: string
+        price7DaysFcfa:
+          type: integer
+        price30DaysFcfa:
+          type: integer
         menuBanner:
           type: ["string", "null"]
         registerBanner:
@@ -451,6 +457,12 @@ components:
           type: string
         channel2Name:
           type: string
+        supportUsername:
+          type: string
+        price7DaysFcfa:
+          type: integer
+        price30DaysFcfa:
+          type: integer
 
     BroadcastInput:
       type: object

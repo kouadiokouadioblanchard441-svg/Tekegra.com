@@ -67,6 +67,8 @@ export default function Settings() {
       channel2Link: data.channel2Link,
       channel2Name: data.channel2Name,
       supportUsername: data.supportUsername,
+      price7DaysFcfa: Number(data.price7DaysFcfa),
+      price30DaysFcfa: Number(data.price30DaysFcfa),
     }
     updateMutation.mutate(
       { data: payload },
@@ -118,6 +120,18 @@ export default function Settings() {
                 <Label htmlFor="supportUsername">Username Telegram support (paiements)</Label>
                 <Input id="supportUsername" {...register("supportUsername")} placeholder="ex: monusername (sans @)" />
                 <p className="text-xs text-muted-foreground">Affiché dans le message d'activation Premium pour que les utilisateurs te contactent.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-1 border-t">
+                <div className="space-y-2">
+                  <Label htmlFor="price7DaysFcfa">Prix abonnement 7 jours (FCFA)</Label>
+                  <Input id="price7DaysFcfa" type="number" {...register("price7DaysFcfa")} placeholder="ex: 5594" />
+                  <p className="text-xs text-muted-foreground">Affiché tel quel dans le bot</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price30DaysFcfa">Prix abonnement 30 jours (FCFA)</Label>
+                  <Input id="price30DaysFcfa" type="number" {...register("price30DaysFcfa")} placeholder="ex: 16794" />
+                  <p className="text-xs text-muted-foreground">Affiché tel quel dans le bot</p>
+                </div>
               </div>
             </CardContent>
           </Card>

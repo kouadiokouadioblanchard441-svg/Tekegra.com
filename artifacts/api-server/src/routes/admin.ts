@@ -281,6 +281,7 @@ router.get("/admin/settings", requireAuth, async (_req, res) => {
     "free_signals_per_day","premium_signals_per_day",
     "channel_1_link","channel_1_name","channel_2_link","channel_2_name",
     "support_username",
+    "price_7_days_fcfa","price_30_days_fcfa",
     "menu_banner","register_banner","luckyjet_banner","mines_banner","guide_banner",
   ];
   const { rows } = await pool.query(
@@ -299,6 +300,8 @@ router.get("/admin/settings", requireAuth, async (_req, res) => {
     channel2Link:         map["channel_2_link"]          ?? "",
     channel2Name:         map["channel_2_name"]          ?? "",
     supportUsername:      map["support_username"]        ?? "",
+    price7DaysFcfa:       parseInt(map["price_7_days_fcfa"]  ?? "5594", 10),
+    price30DaysFcfa:      parseInt(map["price_30_days_fcfa"] ?? "16794", 10),
     menuBanner:           map["menu_banner"]              ?? null,
     registerBanner:       map["register_banner"]          ?? null,
     luckyjetBanner:       map["luckyjet_banner"]          ?? null,
@@ -320,6 +323,8 @@ router.put("/admin/settings", requireAuth, async (req, res) => {
     channel2Link:         "channel_2_link",
     channel2Name:         "channel_2_name",
     supportUsername:      "support_username",
+    price7DaysFcfa:       "price_7_days_fcfa",
+    price30DaysFcfa:      "price_30_days_fcfa",
   };
 
   for (const [jsKey, dbKey] of Object.entries(mapping)) {
@@ -328,17 +333,13 @@ router.put("/admin/settings", requireAuth, async (req, res) => {
     }
   }
 
-  // return updated settings
-  const fakeReq = { } as any;
-  const fakeRes = {
-    json: (data: unknown) => res.json(data),
-    status: () => fakeRes,
-  } as any;
   // Re-read and return
   const keys = [
     "promo_code","affiliate_link",
     "free_signals_per_day","premium_signals_per_day",
     "channel_1_link","channel_1_name","channel_2_link","channel_2_name",
+    "support_username",
+    "price_7_days_fcfa","price_30_days_fcfa",
     "menu_banner","register_banner","luckyjet_banner","mines_banner","guide_banner",
   ];
   const { rows } = await pool.query(
@@ -355,6 +356,9 @@ router.put("/admin/settings", requireAuth, async (req, res) => {
     channel1Name:         map["channel_1_name"]          ?? "",
     channel2Link:         map["channel_2_link"]          ?? "",
     channel2Name:         map["channel_2_name"]          ?? "",
+    supportUsername:      map["support_username"]        ?? "",
+    price7DaysFcfa:       parseInt(map["price_7_days_fcfa"]  ?? "5594", 10),
+    price30DaysFcfa:      parseInt(map["price_30_days_fcfa"] ?? "16794", 10),
     menuBanner:           map["menu_banner"]              ?? null,
     registerBanner:       map["register_banner"]          ?? null,
     luckyjetBanner:       map["luckyjet_banner"]          ?? null,

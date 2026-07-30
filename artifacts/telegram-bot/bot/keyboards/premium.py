@@ -1,13 +1,19 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-def premium_keyboard() -> InlineKeyboardMarkup:
+def premium_keyboard(price_7: str = "5 594 F", price_30: str = "16 794 F") -> InlineKeyboardMarkup:
     buttons = [
         [
-            InlineKeyboardButton(text="⭐ Activer Premium — 7 jours", callback_data="premium:buy_7"),
+            InlineKeyboardButton(
+                text=f"⭐ Premium 7 jours — {price_7}",
+                callback_data="premium:buy_7",
+            ),
         ],
         [
-            InlineKeyboardButton(text="⭐⭐ Activer Premium — 30 jours", callback_data="premium:buy_30"),
+            InlineKeyboardButton(
+                text=f"⭐⭐ Premium 30 jours — {price_30}",
+                callback_data="premium:buy_30",
+            ),
         ],
         [
             InlineKeyboardButton(text="📜 Mon abonnement", callback_data="premium:status"),

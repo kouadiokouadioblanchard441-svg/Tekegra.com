@@ -15,7 +15,24 @@ router = Router()
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 
-async def show_premium(event: Message | CallbackQuery):
+def _format_fcfa(amount: int) -> str:
+    """Formate un montant en FCFA avec séparateur de milliers."""
+    return f"{amount:,} F".replace(",", " ")
+
+
+async def _get_prices(session: AsyncSession) -> tuple[str, str]:
+    """Lit les prix depuis la DB. Retourne (prix_7j, prix_30j) formatés en FCFA."""
+    svc = BotSettingsService(session)
+    p7  = int(await svc.get("price_7_days_fcfa",  "5594"))
+    p30 = int(await svc.get("price_30_days_fcfa", "16794"))
+    return _format_fcfa(p7), _format_fcfa(p30)
+
+
+async def show_premium(event: Message | CallbackQuery, session: AsyncSession | None = None):
+    price_7, price_30 = ("5 594 F", "16 794 F")
+    if session is not None:
+        price_7, price_30 = await _get_prices(session)
+
     text = (
         "⭐ *PREMIUM — Avantages*\n\n"
         f"{SEP}\n"
@@ -26,23 +43,29 @@ async def show_premium(event: Message | CallbackQuery):
         "│◉ Priorité de traitement\n"
         "│◉ Support dédié\n"
         f"{SEP}\n\n"
+        f"💰 *7 jours* : {price_7}\n"
+        f"💰 *30 jours* : {price_30}\n\n"
         f"📣 Code promo : `{settings.BOT_PROMO_CODE}`"
     )
+    kb = premium_keyboard(price_7, price_30)
     if isinstance(event, CallbackQuery):
-        await event.message.edit_text(text, parse_mode="Markdown", reply_markup=premium_keyboard())
+        await event.message.edit_text(text, parse_mode="Markdown", reply_markup=kb)
         await event.answer()
     else:
-        await event.answer(text, parse_mode="Markdown", reply_markup=premium_keyboard())
+        await event.answer(text, parse_mode="Markdown", reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("premium:buy_"))
 async def cb_buy_premium(call: CallbackQuery, session: AsyncSession):
     days = call.data.split("_")[-1]
-    price_map = {"7": "9.99$", "30": "29.99$"}
-    price = price_map.get(days, "?")
 
-    # Lire le username de support depuis la DB (configurable via panneau admin)
     svc = BotSettingsService(session)
+    price_7_raw  = int(await svc.get("price_7_days_fcfa",  "5594"))
+    price_30_raw = int(await svc.get("price_30_days_fcfa", "16794"))
+    price_7  = _format_fcfa(price_7_raw)
+    price_30 = _format_fcfa(price_30_raw)
+    price = price_7 if days == "7" else price_30
+
     support_username = await svc.get("support_username", "")
     if support_username and not support_username.startswith("@"):
         support_username = f"@{support_username}"
@@ -60,7 +83,8 @@ async def cb_buy_premium(call: CallbackQuery, session: AsyncSession):
         f"👤 Votre username : @{call.from_user.username or '—'}\n\n"
         f"📣 Code promo : `{settings.BOT_PROMO_CODE}`"
     )
-    await call.message.edit_text(text, parse_mode="Markdown", reply_markup=premium_keyboard())
+    await call.message.edit_text(text, parse_mode="Markdown",
+                                 reply_markup=premium_keyboard(price_7, price_30))
     await call.answer()
 
 

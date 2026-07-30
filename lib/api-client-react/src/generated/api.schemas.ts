@@ -78,6 +78,9 @@ export interface BotSettings {
   channel1Name: string;
   channel2Link: string;
   channel2Name: string;
+  supportUsername?: string;
+  price7DaysFcfa?: number;
+  price30DaysFcfa?: number;
   /** @nullable */
   menuBanner?: string | null;
   /** @nullable */
@@ -99,6 +102,9 @@ export interface BotSettingsInput {
   channel1Name?: string;
   channel2Link?: string;
   channel2Name?: string;
+  supportUsername?: string;
+  price7DaysFcfa?: number;
+  price30DaysFcfa?: number;
 }
 
 export interface BroadcastInput {

@@ -216,16 +216,5 @@ async def cb_support(call: CallbackQuery, session: AsyncSession):
 # ── Premium (kept for /premium command compatibility) ─────────────────────────
 @router.callback_query(F.data == "menu:premium")
 async def cb_premium_menu(call: CallbackQuery, session: AsyncSession):
-    from bot.keyboards.premium import premium_keyboard
-    text = (
-        "⭐ *PREMIUM — Avantages*\n\n"
-        f"{SEP}\n"
-        "│◉ Signaux illimités : *24h/24*\n"
-        "│◉ Cotes ultra-élevées (jusqu'à 25x+)\n"
-        "│◉ Analyses IA avancées\n"
-        "│◉ Priorité sur les signaux\n"
-        "│◉ Support dédié\n"
-        f"{SEP}"
-    )
-    await navigate(call, text, premium_keyboard())
-    await call.answer()
+    from bot.handlers.premium import show_premium
+    await show_premium(call, session)

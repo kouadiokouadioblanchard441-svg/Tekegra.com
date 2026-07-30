@@ -146,6 +146,6 @@ async def cmd_profile(message: Message, session: AsyncSession):
 
 
 @router.message(Command("premium"))
-async def cmd_premium(message: Message):
+async def cmd_premium(message: Message, session: AsyncSession):
     from bot.handlers.premium import show_premium
-    await show_premium(message)
+    await show_premium(message, session)
