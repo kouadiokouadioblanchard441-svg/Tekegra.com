@@ -168,14 +168,37 @@ def _cote_for_type(
 
 def generate_luckyjet_signal(is_premium: bool = False, cote_type: str = "auto") -> dict:
     heure = _get_signal_time()
-    cote_str, cote_float = _cote_for_type("luckyjet", cote_type, is_premium, 25.0 if is_premium else 15.0)
+
+    # ── Plages Lucky Jet ──────────────────────────────────────────────────────
+    # Standard  : côte 2.00x–5.00x   |  assurance 1.50x–2.00x
+    # Premium   : côte 6.00x–20.00x  |  assurance 4.00x–6.00x
+    if is_premium:
+        if cote_type == "petite":
+            fn = lambda: round(random.uniform(6.00, 12.00), 2)
+        elif cote_type == "grosse":
+            fn = lambda: round(random.uniform(12.00, 20.00), 2)
+        else:
+            fn = lambda: round(random.uniform(6.00, 20.00), 2)
+        assurance_float = round(random.uniform(4.00, 6.00), 2)
+    else:
+        if cote_type == "petite":
+            fn = lambda: round(random.uniform(2.00, 3.50), 2)
+        elif cote_type == "grosse":
+            fn = lambda: round(random.uniform(3.50, 5.00), 2)
+        else:
+            fn = lambda: round(random.uniform(2.00, 5.00), 2)
+        assurance_float = round(random.uniform(1.50, 2.00), 2)
+
+    cote_float = _unique_cote("luckyjet", fn)
+    cote_str = f"{cote_float}x"
+    assurance = f"{assurance_float}x"
+
     confidence = _get_confidence(is_premium)
     quality = _get_quality(confidence)
     trend = _get_trend()
     volatilite = _get_volatilite()
     niveau = _get_niveau()
     risque = _get_risque(niveau)
-    assurance = _assurance_for_type(cote_type)
     countdown = _get_countdown()
     mise_seconde = round(random.uniform(1.0, 3.5 if not is_premium else 5.0), 1)
     verification_code = _get_verification_code()
