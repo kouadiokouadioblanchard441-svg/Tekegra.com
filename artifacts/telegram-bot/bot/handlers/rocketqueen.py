@@ -40,7 +40,7 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         f"⏳ *Chargement du signal Rocket Queen [{label}]...*",
         parse_mode="Markdown",
     )
-    await asyncio.sleep(2)
+    await asyncio.sleep(0.5)
 
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
@@ -122,7 +122,7 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
         f"⏳ *Chargement du signal Premium Rocket Queen [{label}]...*",
         parse_mode="Markdown",
     )
-    await asyncio.sleep(2.5)
+    await asyncio.sleep(0.5)
 
     signal = generate_rocketqueen_signal(is_premium=True, cote_type=cote_type)
     await svc.consume_premium_signal(db_user)
@@ -159,7 +159,7 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "rq:analyse")
 async def cb_rq_analyse(call: CallbackQuery):
     await call.message.edit_text("⏳ *Chargement Rocket Queen...*", parse_mode="Markdown")
-    await asyncio.sleep(1.5)
+    await asyncio.sleep(0.5)
     signal = generate_rocketqueen_signal(is_premium=False, cote_type="auto")
     text = (
         f"🚀 *ROCKET QUEEN ANALYSE*\n"
