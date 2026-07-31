@@ -34,18 +34,19 @@ async def show_premium(event: Message | CallbackQuery, session: AsyncSession | N
         price_7, price_30 = await _get_prices(session)
 
     text = (
-        "⭐ *PREMIUM — Avantages*\n\n"
-        f"{SEP}\n"
-        "│◉ Signaux illimités : *24h/24*\n"
-        "│◉ Cotes ultra-élevées (jusqu'à *25x+*)\n"
-        "│◉ Analyses IA avancées\n"
-        "│◉ Accès aux 2 jeux (Lucky Jet + Mines)\n"
-        "│◉ Priorité de traitement\n"
-        "│◉ Support dédié\n"
+        "🏆 *PASSE PREMIUM*\n"
         f"{SEP}\n\n"
-        f"💰 *7 jours* : {price_7}\n"
-        f"💰 *30 jours* : {price_30}\n\n"
-        f"📣 Code promo : `{settings.BOT_PROMO_CODE}`"
+        "✅ *Ce qui est inclus :*\n\n"
+        "│ 🎯 Signaux *illimités* — 24h/24\n"
+        "│ 📈 Cotes ultra-élevées jusqu'à *25x+*\n"
+        "│ 🤖 Analyses IA *avancées*\n"
+        "│ 💎 Lucky Jet *+* Mines débloqués\n"
+        "│ ⚡ Traitement *prioritaire*\n"
+        "│ 🎧 Support *dédié*\n\n"
+        f"{SEP}\n\n"
+        f"💰 *7 jours* ➜ {price_7}\n"
+        f"💰 *30 jours* ➜ {price_30}\n\n"
+        f"🎁 Code promo : `{settings.BOT_PROMO_CODE}`"
     )
     kb = premium_keyboard(price_7, price_30)
     if isinstance(event, CallbackQuery):
@@ -66,22 +67,29 @@ async def cb_buy_premium(call: CallbackQuery, session: AsyncSession):
     price_30 = _format_fcfa(price_30_raw)
     price = price_7 if days == "7" else price_30
 
-    support_username = await svc.get("support_username", "")
-    if support_username and not support_username.startswith("@"):
-        support_username = f"@{support_username}"
-    support_line = f"\n👤 Contacter : *{support_username}*\n" if support_username else "\n"
+    # Support username — default @jrves, configurable via admin panel
+    support_raw = await svc.get("support_username", "jrves")
+    support_username = support_raw if support_raw.startswith("@") else f"@{support_raw}"
+
+    user_tag = f"@{call.from_user.username}" if call.from_user.username else "_(pas de pseudo)_"
 
     text = (
-        f"⭐ *Activation Premium — {days} jours*\n\n"
+        f"⭐ *ACTIVATION PREMIUM — {days} JOURS*\n"
         f"{SEP}\n"
-        f"│◉ Durée : *{days} jours*\n"
-        f"│◉ Prix : *{price}*\n"
+        f"│ ⏳ Durée : *{days} jours*\n"
+        f"│ 💰 Prix : *{price}*\n"
+        f"│ 🚀 Signaux illimités inclus\n"
         f"{SEP}\n\n"
-        "📩 Pour activer votre abonnement, contactez notre support en mentionnant votre ID Telegram.\n"
-        f"{support_line}"
-        f"🆔 Votre ID : `{call.from_user.id}`\n"
-        f"👤 Votre username : @{call.from_user.username or '—'}\n\n"
-        f"📣 Code promo : `{settings.BOT_PROMO_CODE}`"
+        f"📋 *Étapes pour activer :*\n\n"
+        f"*1️⃣* Contactez *{support_username}* sur Telegram\n"
+        f"*2️⃣* Envoyez votre *ID Telegram* ci-dessous\n"
+        f"*3️⃣* Effectuez le paiement de *{price}*\n"
+        f"*4️⃣* Votre accès Premium est activé ✅\n\n"
+        f"{SEP}\n"
+        f"🆔 *Votre ID :* `{call.from_user.id}`\n"
+        f"👤 *Votre pseudo :* {user_tag}\n"
+        f"🎁 *Code promo :* `{settings.BOT_PROMO_CODE}`\n"
+        f"{SEP}"
     )
     await call.message.edit_text(text, parse_mode="Markdown",
                                  reply_markup=premium_keyboard(price_7, price_30))
