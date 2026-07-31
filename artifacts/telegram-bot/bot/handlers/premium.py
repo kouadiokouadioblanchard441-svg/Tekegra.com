@@ -67,8 +67,8 @@ async def cb_buy_premium(call: CallbackQuery, session: AsyncSession):
     price_30 = _format_fcfa(price_30_raw)
     price = price_7 if days == "7" else price_30
 
-    # Support username — default @jrves, configurable via admin panel
-    support_raw = await svc.get("support_username", "jrves")
+    # Support username — configurable via admin panel
+    support_raw = await svc.get("support_username", "JRYV14")
     support_username = support_raw if support_raw.startswith("@") else f"@{support_raw}"
 
     user_tag = f"@{call.from_user.username}" if call.from_user.username else "_(pas de pseudo)_"
