@@ -2,3 +2,4 @@
 - [pnpm version mismatch fix](pnpm-version-fix.md) — project declares pnpm@9.15.9 but Replit runs 10.x; fix via manage-package-manager-versions=false in .npmrc
 - [Admin panel build fix](admin-panel-build.md) — two broken imports fixed; re-export bridge and Sidebar import path
 - [Vercel serverless bot limits](vercel-serverless-limits.md) — webhook functions are stateless; timed background cleanup needs durable storage and scheduling
+- [Signal timing](signal-timing.md) — signal play time should be exactly two minutes after the request

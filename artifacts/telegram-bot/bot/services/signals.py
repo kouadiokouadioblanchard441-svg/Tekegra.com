@@ -54,9 +54,9 @@ def _is_peak_hour() -> bool:
 
 
 def _get_signal_time() -> str:
-    """Retourne une heure de jeu dans 2 à 8 minutes pour laisser le temps de jouer."""
+    """Retourne une heure de jeu exactement 2 minutes à l'avance."""
     now = datetime.now(pytz.UTC)
-    offset = timedelta(minutes=random.randint(2, 8))
+    offset = timedelta(minutes=2)
     game_time = now + offset
     return game_time.strftime("%H:%M") + " (GMT+00)"
 
