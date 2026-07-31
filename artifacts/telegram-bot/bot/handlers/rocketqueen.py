@@ -9,6 +9,7 @@ from bot.services.user_service import UserService
 from bot.utils.formatters import format_rocketqueen_signal, format_countdown
 from bot.utils.message_cleaner import (
     delete_previous_signal,
+    is_tracked_message,
     track_existing_message,
     track_signal_message,
     schedule_delete,
@@ -29,15 +30,17 @@ SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None:
     """Delete trigger message, send loading, then edit to final signal."""
+    trigger_was_tracked = is_tracked_message(call.from_user.id, call.message)
     await delete_previous_signal(call.from_user.id)
-    try:
-        await call.message.delete()
-    except Exception:
-        pass
+    if not trigger_was_tracked:
+        try:
+            await call.message.delete()
+        except Exception:
+            pass
     loading = await call.message.answer("⏳ *Analyse en cours...*", parse_mode="Markdown")
     track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
     schedule_delete(loading.chat.id, loading.message_id)
-    await asyncio.sleep(0.6)
+    await asyncio.sleep(0.15)
     await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
 
@@ -184,7 +187,7 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "rq:analyse")
 async def cb_rq_analyse(call: CallbackQuery):
     await call.message.edit_text("⏳ *Chargement Rocket Queen...*", parse_mode="Markdown")
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.15)
     signal = generate_rocketqueen_signal(is_premium=False, cote_type="auto")
     text = (
         f"🚀 *ROCKET QUEEN ANALYSE*\n"

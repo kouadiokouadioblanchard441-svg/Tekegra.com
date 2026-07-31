@@ -42,13 +42,25 @@ class UserService:
             logger.info(f"New user registered (pending): {telegram_id} (@{username})")
         else:
             user._is_new = False
-            # Update activity
-            user.last_active = datetime.utcnow()
+            # Updating activity on every callback forces a remote Supabase
+            # commit before every screen can be displayed. Keep the activity
+            # timestamp useful without turning every button click into a
+            # write round trip.
+            dirty = False
+            now = datetime.utcnow()
+            if user.last_active is None or (now - user.last_active).total_seconds() >= 60:
+                user.last_active = now
+                dirty = True
             if username:
-                user.username = username
+                if user.username != username:
+                    user.username = username
+                    dirty = True
             if first_name:
-                user.first_name = first_name
-            await self.session.commit()
+                if user.first_name != first_name:
+                    user.first_name = first_name
+                    dirty = True
+            if dirty:
+                await self.session.commit()
 
         return user
 

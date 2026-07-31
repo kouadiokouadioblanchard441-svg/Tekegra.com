@@ -21,7 +21,9 @@ _tracked_messages: dict[int, set[tuple[int, int]]] = {}
 
 _bot = None
 SIGNAL_TTL_SECONDS = 10 * 60
-DELETE_ANIMATION_DELAY_SECONDS = 0.20
+# Telegram animates an actual delete in the client. Keep only a tiny buffer;
+# a longer sleep makes every navigation feel slow.
+DELETE_ANIMATION_DELAY_SECONDS = 0.04
 
 
 def init_cleaner(bot) -> None:
@@ -73,6 +75,12 @@ def track_signal_message(user_id: int, chat_id: int, message_id: int) -> None:
     key = (chat_id, message_id)
     _last_signal[user_id] = key
     _tracked_messages.setdefault(user_id, set()).add(key)
+
+
+def is_tracked_message(user_id: int, message) -> bool:
+    """Return whether a message is already part of this user's lifecycle."""
+    key = (message.chat.id, message.message_id)
+    return key in _tracked_messages.get(user_id, set())
 
 
 async def track_existing_message(user_id: int, message) -> None:

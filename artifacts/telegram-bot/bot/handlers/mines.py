@@ -9,6 +9,7 @@ from bot.services.user_service import UserService
 from bot.utils.formatters import format_mines_signal, format_countdown
 from bot.utils.message_cleaner import (
     delete_previous_signal,
+    is_tracked_message,
     track_existing_message,
     track_signal_message,
     schedule_delete,
@@ -67,9 +68,11 @@ async def _send_mines_signal(
     """Delete trigger message, send loading, then edit to the final mines grid."""
     # The previous response can be a menu or an older signal. Remove it before
     # creating the loading/final message so two bot messages cannot coexist.
+    trigger_was_tracked = is_tracked_message(call.from_user.id, call.message)
     await delete_previous_signal(call.from_user.id)
     try:
-        await call.message.delete()
+        if not trigger_was_tracked:
+            await call.message.delete()
     except Exception:
         pass
 
@@ -78,7 +81,7 @@ async def _send_mines_signal(
     # Telegram or the process fails before the final grid edit.
     track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
     schedule_delete(loading.chat.id, loading.message_id)
-    await asyncio.sleep(0.6)
+    await asyncio.sleep(0.15)
 
     header = _grid_header(signal, is_premium, remaining)
     keyboard = mines_grid_keyboard(

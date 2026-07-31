@@ -11,6 +11,7 @@ Logic:
     configured channels. Non-members see a prompt with channel links and a
     "✅ J'ai rejoint — Vérifier" button.
 """
+import time
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
@@ -37,9 +38,25 @@ _MEMBER_STATUSES = {
 
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
+# Channel settings change rarely, while this middleware runs on every update.
+# A short TTL removes several Supabase round trips from each button click.
+_CHANNEL_CONFIG_TTL_SECONDS = 15.0
+_CHANNEL_CONFIG_CACHE: tuple[float, list[dict]] | None = None
+
+# Telegram membership is also stable for a few seconds. Keep this short so a
+# newly joined user is not meaningfully delayed, while rapid button clicks do
+# not repeat the same Bot API request.
+_MEMBERSHIP_TTL_SECONDS = 5.0
+_MEMBERSHIP_CACHE: dict[tuple[int, int], tuple[float, bool]] = {}
+
 
 async def _get_channel_config(session: AsyncSession) -> list[dict]:
     """Return a list of {id, name, link} dicts for configured channels."""
+    global _CHANNEL_CONFIG_CACHE
+    now = time.monotonic()
+    if _CHANNEL_CONFIG_CACHE and now - _CHANNEL_CONFIG_CACHE[0] < _CHANNEL_CONFIG_TTL_SECONDS:
+        return _CHANNEL_CONFIG_CACHE[1]
+
     svc = BotSettingsService(session)
     channels = []
     for slot in ("1", "2"):
@@ -55,6 +72,7 @@ async def _get_channel_config(session: AsyncSession) -> list[dict]:
         name = await svc.get(f"channel_{slot}_name", f"📢 Canal {slot}")
         link = await svc.get(f"channel_{slot}_link", "")
         channels.append({"id": channel_id, "name": name or f"📢 Canal {slot}", "link": link or ""})
+    _CHANNEL_CONFIG_CACHE = (now, channels)
     return channels
 
 
@@ -86,9 +104,17 @@ def _gate_text(channels: list[dict]) -> str:
 
 async def _is_member(bot, user_id: int, channel_id: int) -> bool:
     """Return True if the user is a member / admin / creator of the channel."""
+    key = (user_id, channel_id)
+    now = time.monotonic()
+    cached = _MEMBERSHIP_CACHE.get(key)
+    if cached and now - cached[0] < _MEMBERSHIP_TTL_SECONDS:
+        return cached[1]
+
     try:
         member = await bot.get_chat_member(chat_id=channel_id, user_id=user_id)
-        return member.status in _MEMBER_STATUSES
+        result = member.status in _MEMBER_STATUSES
+        _MEMBERSHIP_CACHE[key] = (now, result)
+        return result
     except (TelegramBadRequest, TelegramForbiddenError) as e:
         # Channel not found or bot not admin — fail open so we don't lock everyone out
         logger.warning(f"channel_check: cannot check channel {channel_id}: {e}")
