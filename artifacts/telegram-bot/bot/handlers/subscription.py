@@ -4,6 +4,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.enums import ChatMemberStatus
 from aiogram.types import CallbackQuery
 from loguru import logger
+from bot.utils.message_cleaner import track_existing_message
 
 from config import settings
 
@@ -63,8 +64,12 @@ async def cb_check_subscription(call: CallbackQuery):
             parse_mode="Markdown",
             reply_markup=main_menu_keyboard(settings.BOT_AFFILIATE_LINK),
         )
+        await track_existing_message(user_id, call.message)
     except TelegramBadRequest:
-        await call.message.answer(
+        from bot.utils.message_cleaner import send_tracked_message
+        await send_tracked_message(
+            call.message,
+            user_id,
             text,
             parse_mode="Markdown",
             reply_markup=main_menu_keyboard(settings.BOT_AFFILIATE_LINK),

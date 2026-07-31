@@ -11,6 +11,7 @@ from bot.utils.formatters import (
 )
 from bot.utils.message_cleaner import (
     delete_previous_signal,
+    track_existing_message,
     track_signal_message,
     schedule_delete,
 )
@@ -31,6 +32,7 @@ SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None:
     """Delete trigger message, send loading, then edit to final signal."""
+    await delete_previous_signal(call.from_user.id)
     # Delete the trigger message (choice screen / game menu) — silently ignore if already gone
     try:
         await call.message.delete()
@@ -38,10 +40,10 @@ async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None
         pass
     # Send a fresh loading message in the same chat
     loading = await call.message.answer("⏳ *Analyse en cours...*", parse_mode="Markdown")
-    await asyncio.sleep(0.6)
-    await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
     track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
     schedule_delete(loading.chat.id, loading.message_id)
+    await asyncio.sleep(0.6)
+    await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
 
 # ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
@@ -106,6 +108,7 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
             )
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
+            await track_existing_message(user.id, call.message)
             await call.answer("⛔ Quota gratuit épuisé")
             return
         signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
@@ -163,9 +166,16 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         try:
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
+            await track_existing_message(user.id, call.message)
         except Exception:
-            await call.message.answer(text, parse_mode="Markdown",
-                                      reply_markup=premium_locked_keyboard())
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(
+                call.message,
+                user.id,
+                text,
+                parse_mode="Markdown",
+                reply_markup=premium_locked_keyboard(),
+            )
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
@@ -223,9 +233,16 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         try:
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
+            await track_existing_message(user.id, call.message)
         except Exception:
-            await call.message.answer(text, parse_mode="Markdown",
-                                      reply_markup=premium_locked_keyboard())
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(
+                call.message,
+                user.id,
+                text,
+                parse_mode="Markdown",
+                reply_markup=premium_locked_keyboard(),
+            )
         await call.answer("🔒 Premium requis")
         return
 

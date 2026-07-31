@@ -6,6 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.user_service import UserService
 from bot.utils.formatters import format_profile
 from bot.keyboards.main_menu import back_to_main_keyboard
+from bot.utils.message_cleaner import (
+    delete_incoming_message,
+    send_tracked_message,
+    track_existing_message,
+)
 from config import settings
 
 router = Router()
@@ -52,10 +57,17 @@ async def show_profile(event: Message | CallbackQuery, session: AsyncSession):
     if isinstance(event, CallbackQuery):
         await event.message.edit_text(text, parse_mode="Markdown",
                                       reply_markup=back_to_main_keyboard())
+        await track_existing_message(user.id, event.message)
         await event.answer()
     else:
-        await event.answer(text, parse_mode="Markdown",
-                           reply_markup=back_to_main_keyboard())
+        await delete_incoming_message(event)
+        await send_tracked_message(
+            event,
+            user.id,
+            text,
+            parse_mode="Markdown",
+            reply_markup=back_to_main_keyboard(),
+        )
 
 
 async def show_history(event: Message | CallbackQuery, session: AsyncSession):
@@ -89,10 +101,16 @@ async def show_history(event: Message | CallbackQuery, session: AsyncSession):
     if isinstance(event, CallbackQuery):
         await event.message.edit_text(text, parse_mode="Markdown",
                                       reply_markup=back_to_main_keyboard())
+        await track_existing_message(user.id, event.message)
         await event.answer()
     else:
-        await event.answer(text, parse_mode="Markdown",
-                           reply_markup=back_to_main_keyboard())
+        await send_tracked_message(
+            event,
+            user.id,
+            text,
+            parse_mode="Markdown",
+            reply_markup=back_to_main_keyboard(),
+        )
 
 
 @router.callback_query(F.data == "menu:profile")

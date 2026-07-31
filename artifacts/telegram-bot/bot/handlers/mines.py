@@ -9,6 +9,7 @@ from bot.services.user_service import UserService
 from bot.utils.formatters import format_mines_signal, format_countdown
 from bot.utils.message_cleaner import (
     delete_previous_signal,
+    track_existing_message,
     track_signal_message,
     schedule_delete,
 )
@@ -42,6 +43,7 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
     lines = [
         f"🎯 *MINES PREDICTION* [{badge}]",
         SEP,
+        f"|●>*HEURE : {signal['heure']}* ⏰",
         f"|●>*PIÈGES : {signal['mines']} mines* 💣",
         f"|●>*RISQUE : {signal['risque']}* ⚠️",
         f"|●>*CONFIANCE : {signal['confidence']}%* 🎯",
@@ -52,7 +54,7 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
     ]
     if remaining is not None and not is_premium:
         lines.append(f"🎯 Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*")
-    lines.append(f"🎁 code promo: `{settings.BOT_PROMO_CODE}`")
+    lines.append(f"🎁 code promo: *{settings.BOT_PROMO_CODE}*")
     return "\n".join(lines)
 
 
@@ -63,12 +65,19 @@ async def _send_mines_signal(
     remaining: int | None = None,
 ) -> None:
     """Delete trigger message, send loading, then edit to the final mines grid."""
+    # The previous response can be a menu or an older signal. Remove it before
+    # creating the loading/final message so two bot messages cannot coexist.
+    await delete_previous_signal(call.from_user.id)
     try:
         await call.message.delete()
     except Exception:
         pass
 
     loading = await call.message.answer("⏳ *Analyse de la grille...*", parse_mode="Markdown")
+    # Track the loading message immediately so it cannot become orphaned if
+    # Telegram or the process fails before the final grid edit.
+    track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
+    schedule_delete(loading.chat.id, loading.message_id)
     await asyncio.sleep(0.6)
 
     header = _grid_header(signal, is_premium, remaining)
@@ -78,8 +87,6 @@ async def _send_mines_signal(
         affiliate_link=settings.BOT_AFFILIATE_LINK,
     )
     await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
-    track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
-    schedule_delete(loading.chat.id, loading.message_id)
 
 
 # ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
@@ -110,6 +117,7 @@ async def cb_mines_choose_type(call: CallbackQuery, session: AsyncSession):
         parse_mode="Markdown",
         reply_markup=mines_choose_keyboard(remaining, settings.FREE_SIGNALS_TOTAL),
     )
+    await track_existing_message(user.id, call.message)
     await call.answer()
 
 
@@ -143,6 +151,7 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
             )
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
+            await track_existing_message(user.id, call.message)
             await call.answer("⛔ Quota gratuit épuisé")
             return
         signal = generate_mines_signal(is_premium=False)
@@ -180,9 +189,16 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         try:
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
+            await track_existing_message(user.id, call.message)
         except Exception:
-            await call.message.answer(text, parse_mode="Markdown",
-                                      reply_markup=premium_locked_keyboard())
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(
+                call.message,
+                user.id,
+                text,
+                parse_mode="Markdown",
+                reply_markup=premium_locked_keyboard(),
+            )
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
@@ -219,8 +235,14 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
         except Exception:
-            await call.message.answer(text, parse_mode="Markdown",
-                                      reply_markup=premium_locked_keyboard())
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(
+                call.message,
+                user.id,
+                text,
+                parse_mode="Markdown",
+                reply_markup=premium_locked_keyboard(),
+            )
         await call.answer("🔒 Premium requis")
         return
 
@@ -259,6 +281,7 @@ async def cb_mines_analyse(call: CallbackQuery):
         affiliate_link=settings.BOT_AFFILIATE_LINK,
     )
     await call.message.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
+    await track_existing_message(call.from_user.id, call.message)
     await call.answer()
 
 
@@ -298,4 +321,5 @@ async def cb_mines_history(call: CallbackQuery, session: AsyncSession):
 
     await call.message.edit_text(text, parse_mode="Markdown",
                                  reply_markup=mines_menu_keyboard())
+    await track_existing_message(call.from_user.id, call.message)
     await call.answer()

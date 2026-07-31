@@ -78,7 +78,7 @@ class BanCheckMiddleware(BaseMiddleware):
                     f"⏳ *Accès en attente*\n\n"
                     f"Votre demande est en cours de traitement.\n"
                     f"Un admin va l'examiner sous peu.\n\n"
-                    f"🎁 Code promo 1WIN : `{__import__('config').settings.BOT_PROMO_CODE}`",
+                    f"🎁 Code promo 1WIN : *{__import__('config').settings.BOT_PROMO_CODE}*",
                     parse_mode="Markdown",
                 )
             return

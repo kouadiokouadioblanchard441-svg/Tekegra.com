@@ -16,7 +16,6 @@ from bot.keyboards.main_menu import (
 from bot.services.user_service import UserService
 from bot.services.settings_service import BotSettingsService
 from bot.utils.navigation import navigate
-from bot.utils.message_cleaner import clear_signal_tracking
 from config import settings
 
 router = Router()
@@ -33,7 +32,6 @@ async def _banner(session: AsyncSession, key: str) -> str | None:
 # ── Main menu ─────────────────────────────────────────────────────────────────
 @router.callback_query(F.data == "menu:main")
 async def cb_main_menu(call: CallbackQuery, session: AsyncSession):
-    clear_signal_tracking(call.from_user.id)
     photo = await _banner(session, "menu_banner")
     text = "🎮 *Menu*\n\nChoisis une option ci-dessous 👇"
     await navigate(call, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
@@ -61,7 +59,7 @@ async def cb_get_signal(call: CallbackQuery, session: AsyncSession):
             "◉ *1 ➜* Appuyez sur le bouton *INSCRIPTION* pour créer un nouveau compte\n"
             "◆ Si vous avez déjà un compte, déconnectez-vous puis créez-en un nouveau\n\n"
             "◇──────────────────────────◇\n\n"
-            f"◉ *2 ➜* Utilisez le code promo `{settings.BOT_PROMO_CODE}` lors de l'inscription\n\n"
+            f"◉ *2 ➜* Utilisez le code promo *{settings.BOT_PROMO_CODE}* lors de l'inscription\n\n"
             "◇──────────────────────────◇\n\n"
             "◉ *3 ➜* 📱 Une notification de confirmation vous sera envoyée "
             "automatiquement après l'inscription ✅\n\n"
@@ -105,7 +103,6 @@ async def cb_game_select_inner(call: CallbackQuery, session: AsyncSession):
 # ── Game pages ────────────────────────────────────────────────────────────────
 @router.callback_query(F.data == "menu:luckyjet")
 async def cb_luckyjet_page(call: CallbackQuery, session: AsyncSession):
-    clear_signal_tracking(call.from_user.id)
     photo = await _banner(session, "luckyjet_banner")
     text = (
         "🚀 *LUCKY JET*\n\n"
@@ -122,7 +119,6 @@ async def cb_luckyjet_page(call: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "menu:mines")
 async def cb_mines_page(call: CallbackQuery, session: AsyncSession):
-    clear_signal_tracking(call.from_user.id)
     photo = await _banner(session, "mines_banner")
     text = (
         "💣 *MINES*\n\n"
@@ -181,12 +177,12 @@ async def cb_guide(call: CallbackQuery, session: AsyncSession):
         "⬤ *1 ➦ REJOINDRE LES CANAUX*\n"
         "Abonnez-vous à nos canaux officiels (boutons ci-dessous) ✅\n\n"
         "⬤ *2 ➦ INSCRIPTION*\n"
-        f"Appuyez sur *« INSCRIPTION »* et créez un compte avec le code promo `{settings.BOT_PROMO_CODE}`.\n"
+        f"Appuyez sur *« INSCRIPTION »* et créez un compte avec le code promo *{settings.BOT_PROMO_CODE}*.\n"
         "◆ Si vous possédez déjà un compte, déconnectez-vous puis créez-en un nouveau.\n\n"
         "⬤ *3 ➦ DÉPÔT*\n"
         "Effectuez un dépôt minimum de *3 000 F (5 $)* pour activer les prédictions.\n\n"
         f"{SEP}\n"
-        f"🎁 Code promo : `{settings.BOT_PROMO_CODE}`"
+        f"🎁 Code promo : *{settings.BOT_PROMO_CODE}*"
     )
     await navigate(
         call, text,

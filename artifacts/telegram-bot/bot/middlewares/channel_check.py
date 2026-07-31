@@ -152,10 +152,24 @@ class ChannelCheckMiddleware(BaseMiddleware):
                     try:
                         await event.message.edit_text(text, parse_mode="Markdown", reply_markup=kb)
                     except TelegramBadRequest:
-                        await event.message.answer(text, parse_mode="Markdown", reply_markup=kb)
+                        from bot.utils.message_cleaner import send_tracked_message
+                        await send_tracked_message(
+                            event.message,
+                            user.id,
+                            text,
+                            parse_mode="Markdown",
+                            reply_markup=kb,
+                        )
                     await event.answer("🔒 Rejoins nos chaînes d'abord !", show_alert=False)
                 elif isinstance(event, Message):
-                    await event.answer(text, parse_mode="Markdown", reply_markup=kb)
+                    from bot.utils.message_cleaner import send_tracked_message
+                    await send_tracked_message(
+                        event,
+                        user.id,
+                        text,
+                        parse_mode="Markdown",
+                        reply_markup=kb,
+                    )
                 return  # block
 
         return await handler(event, data)

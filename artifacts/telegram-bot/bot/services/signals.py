@@ -331,6 +331,7 @@ def generate_aviator_signal(is_premium: bool = False) -> dict:
 # ─── Mines ────────────────────────────────────────────────────────────────────
 
 def generate_mines_signal(is_premium: bool = False) -> dict:
+    heure = _get_signal_time()
     if is_premium:
         mines_options = [1, 2, 3, 5, 10, 15]
         weights = [10, 20, 30, 25, 10, 5]
@@ -356,6 +357,7 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
     grid = _generate_mines_grid(mines_count=mines, is_premium=is_premium)
 
     return {
+        "heure": heure,
         "mines": mines,
         "safe_tiles": safe_tiles,
         "safe_probability": safe_probability,

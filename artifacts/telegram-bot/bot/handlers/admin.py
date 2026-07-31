@@ -166,7 +166,7 @@ async def cb_approve_user(call: CallbackQuery, session: AsyncSession, bot: Bot):
                 f"│◉ Votre accès au bot a été *approuvé* ✅\n"
                 f"│◉ Utilise /start pour accéder au menu.\n"
                 f"{SEP}\n\n"
-                f"🎁 Code promo 1WIN : `{settings.BOT_PROMO_CODE}`"
+                f"🎁 Code promo 1WIN : *{settings.BOT_PROMO_CODE}*"
             ),
             parse_mode="Markdown",
         )

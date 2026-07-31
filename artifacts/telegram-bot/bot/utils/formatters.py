@@ -43,7 +43,7 @@ def format_luckyjet_signal(
         f"|●>*COTE : {cote}* 🚀\n"
         f"|●>*ASSURANCE : {assurance}* ✅\n"
         f"{SEP}\n\n"
-        f"code promo: {promo_code}"
+        f"code promo: *{promo_code}*"
     )
 
 
@@ -71,7 +71,7 @@ def format_rocketqueen_signal(
         f"│◉➤ *COTE* : {cote} 🚀\n"
         f"│◉➤ *ASSURANCE* : {assurance} ✅\n"
         f"{SEP}\n"
-        f"🎁 Code promo : `{promo_code}`"
+        f"🎁 Code promo : *{promo_code}*"
     )
 
 
@@ -98,6 +98,7 @@ def format_mines_signal(
     niveau: str,
     risque: str,
     promo_code: str,
+    heure: str = "",
     is_premium: bool = False,
     confidence: int = 0,
     quality: str = "",
@@ -111,11 +112,12 @@ def format_mines_signal(
     return (
         f"🎯 *MINES ANALYSE* [{badge}]\n"
         f"{SEP}\n"
+        f"│◉➤ *HEURE* : {heure} ⏰\n"
         f"│◉➤ *Difficulté* : {mines} mines\n"
         f"│◉➤ *Niveau conseillé* : {niveau}\n"
         f"│◉➤ *Gestion du risque* : {risque} ✅\n"
         f"{SEP}\n"
-        f"🎁 Code promo : `{promo_code}`"
+        f"🎁 Code promo : *{promo_code}*"
     )
 
 
@@ -146,7 +148,7 @@ def format_aviator_signal(
         f"│◉➤ *COTE CIBLE* : {cote} 🚀\n"
         f"│◉➤ *ASSURANCE* : {assurance} ✅\n"
         f"{SEP}\n"
-        f"🎁 Code promo : `{promo_code}`"
+        f"🎁 Code promo : *{promo_code}*"
     )
 
 
@@ -197,10 +199,10 @@ def format_welcome(
         f"{SEP}\n\n"
         f"🚀 *Pour commencer à gagner :*\n"
         f"1️⃣ Crée un nouveau compte *1WIN* avec le lien ci-dessous\n"
-        f"2️⃣ Utilise le code promo `{promo_code}` lors de l'inscription\n"
+        f"2️⃣ Utilise le code promo *{promo_code}* lors de l'inscription\n"
         f"3️⃣ Effectue ton premier dépôt\n"
         f"4️⃣ Lance Lucky Jet ou Rocket Queen et utilise nos signaux !\n\n"
-        f"🎁 Code promo : `{promo_code}`\n\n"
+        f"🎁 Code promo : *{promo_code}*\n\n"
         "Choisis une option ci-dessous 👇"
     )
 

@@ -8,6 +8,11 @@ from bot.services.user_service import UserService
 from bot.services.settings_service import BotSettingsService
 from bot.keyboards.premium import premium_keyboard
 from bot.keyboards.main_menu import back_to_main_keyboard
+from bot.utils.message_cleaner import (
+    delete_incoming_message,
+    send_tracked_message,
+    track_existing_message,
+)
 from config import settings
 
 router = Router()
@@ -46,14 +51,21 @@ async def show_premium(event: Message | CallbackQuery, session: AsyncSession | N
         f"{SEP}\n\n"
         f"💰 *7 jours* ➜ {price_7}\n"
         f"💰 *30 jours* ➜ {price_30}\n\n"
-        f"🎁 Code promo : `{settings.BOT_PROMO_CODE}`"
+        f"🎁 Code promo : *{settings.BOT_PROMO_CODE}*"
     )
     kb = premium_keyboard(price_7, price_30)
     if isinstance(event, CallbackQuery):
         await event.message.edit_text(text, parse_mode="Markdown", reply_markup=kb)
         await event.answer()
     else:
-        await event.answer(text, parse_mode="Markdown", reply_markup=kb)
+        await delete_incoming_message(event)
+        await send_tracked_message(
+            event,
+            event.from_user.id,
+            text,
+            parse_mode="Markdown",
+            reply_markup=kb,
+        )
 
 
 @router.callback_query(F.data.startswith("premium:buy_"))
@@ -88,11 +100,12 @@ async def cb_buy_premium(call: CallbackQuery, session: AsyncSession):
         f"{SEP}\n"
         f"🆔 *Votre ID :* `{call.from_user.id}`\n"
         f"👤 *Votre pseudo :* {user_tag}\n"
-        f"🎁 *Code promo :* `{settings.BOT_PROMO_CODE}`\n"
+        f"🎁 *Code promo : {settings.BOT_PROMO_CODE}*\n"
         f"{SEP}"
     )
     await call.message.edit_text(text, parse_mode="Markdown",
                                  reply_markup=premium_keyboard(price_7, price_30))
+    await track_existing_message(call.from_user.id, call.message)
     await call.answer()
 
 
@@ -126,4 +139,5 @@ async def cb_premium_status(call: CallbackQuery, session: AsyncSession):
         )
 
     await call.message.edit_text(text, parse_mode="Markdown", reply_markup=premium_keyboard())
+    await track_existing_message(call.from_user.id, call.message)
     await call.answer()

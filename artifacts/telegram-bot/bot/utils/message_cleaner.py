@@ -1,10 +1,9 @@
-"""Keeps signal messages for ten minutes and replaces them on a new request.
+"""Keeps the latest bot message per user for ten minutes and replaces it.
 
 Rules:
-  • signal messages are sent as *new* messages (not edits).
-  • a signal is automatically deleted after 600 seconds.
-  • when a new signal is requested, delete_previous_signal() removes the old
-    signal immediately, before the new one is displayed.
+  • the latest bot response is automatically deleted after 600 seconds.
+  • when a new response is sent, the previous tracked response is removed first.
+  • edited menu messages are tracked too, so they also expire after ten minutes.
 """
 import asyncio
 import time
@@ -13,7 +12,7 @@ from loguru import logger
 # {(chat_id, message_id): delete_at_unix_timestamp}
 _pending: dict[tuple[int, int], float] = {}
 
-# Last signal message per user: {user_id: (chat_id, message_id)}
+# Last bot message per user: {user_id: (chat_id, message_id)}
 _last_signal: dict[int, tuple[int, int]] = {}
 
 _bot = None
@@ -27,7 +26,7 @@ def init_cleaner(bot) -> None:
 
 
 async def delete_previous_signal(user_id: int) -> None:
-    """Delete the last signal message for this user (if any), then clear tracking."""
+    """Delete the last tracked bot message for this user, then clear tracking."""
     key = _last_signal.pop(user_id, None)
     if key is None or _bot is None:
         return
@@ -40,14 +39,54 @@ async def delete_previous_signal(user_id: int) -> None:
     _pending.pop((chat_id, message_id), None)
 
 
+async def delete_incoming_message(message) -> None:
+    """Remove a user's command/message when Telegram allows it."""
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+
 def schedule_delete(chat_id: int, message_id: int, delete_in_seconds: float = SIGNAL_TTL_SECONDS) -> None:
     """Schedule a signal message for deletion after the configured TTL."""
     _pending[(chat_id, message_id)] = time.time() + delete_in_seconds
 
 
 def track_signal_message(user_id: int, chat_id: int, message_id: int) -> None:
-    """Remember the latest signal message for this user."""
+    """Remember the latest bot message for this user."""
     _last_signal[user_id] = (chat_id, message_id)
+
+
+async def track_existing_message(user_id: int, message) -> None:
+    """Track a message that was edited in place.
+
+    If another response was tracked for this user, remove it first. This
+    prevents a fallback/new message from remaining beside an edited menu.
+    """
+    current = _last_signal.get(user_id)
+    key = (message.chat.id, message.message_id)
+    if current is not None and current != key:
+        await delete_previous_signal(user_id)
+    _last_signal[user_id] = key
+    schedule_delete(*key)
+
+
+async def send_tracked_message(message, user_id: int, text: str, **kwargs):
+    """Delete the previous response, send a text response, and track it."""
+    await delete_previous_signal(user_id)
+    sent = await message.answer(text, **kwargs)
+    track_signal_message(user_id, sent.chat.id, sent.message_id)
+    schedule_delete(sent.chat.id, sent.message_id)
+    return sent
+
+
+async def send_tracked_photo(message, user_id: int, photo: str, **kwargs):
+    """Delete the previous response, send a photo response, and track it."""
+    await delete_previous_signal(user_id)
+    sent = await message.answer_photo(photo=photo, **kwargs)
+    track_signal_message(user_id, sent.chat.id, sent.message_id)
+    schedule_delete(sent.chat.id, sent.message_id)
+    return sent
 
 
 def clear_signal_tracking(user_id: int) -> None:

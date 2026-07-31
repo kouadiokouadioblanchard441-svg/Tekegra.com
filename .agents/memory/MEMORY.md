@@ -3,3 +3,4 @@
 - [Admin panel build fix](admin-panel-build.md) — two broken imports fixed; re-export bridge and Sidebar import path
 - [Vercel serverless bot limits](vercel-serverless-limits.md) — webhook functions are stateless; timed background cleanup needs durable storage and scheduling
 - [Signal timing](signal-timing.md) — signal play time should be exactly two minutes after the request
+- [Telegram message cleanup](telegram-message-cleanup.md) — track edited and newly sent bot responses under one per-user message lifecycle

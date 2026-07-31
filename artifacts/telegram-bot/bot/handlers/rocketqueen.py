@@ -9,6 +9,7 @@ from bot.services.user_service import UserService
 from bot.utils.formatters import format_rocketqueen_signal, format_countdown
 from bot.utils.message_cleaner import (
     delete_previous_signal,
+    track_existing_message,
     track_signal_message,
     schedule_delete,
 )
@@ -28,15 +29,16 @@ SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None:
     """Delete trigger message, send loading, then edit to final signal."""
+    await delete_previous_signal(call.from_user.id)
     try:
         await call.message.delete()
     except Exception:
         pass
     loading = await call.message.answer("⏳ *Analyse en cours...*", parse_mode="Markdown")
-    await asyncio.sleep(0.6)
-    await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
     track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
     schedule_delete(loading.chat.id, loading.message_id)
+    await asyncio.sleep(0.6)
+    await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
 
 @router.callback_query(F.data.startswith("rq:signal_free:"))
@@ -67,9 +69,16 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         try:
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
+            await track_existing_message(user.id, call.message)
         except Exception:
-            await call.message.answer(text, parse_mode="Markdown",
-                                      reply_markup=premium_locked_keyboard())
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(
+                call.message,
+                user.id,
+                text,
+                parse_mode="Markdown",
+                reply_markup=premium_locked_keyboard(),
+            )
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
@@ -128,9 +137,16 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
         try:
             await call.message.edit_text(text, parse_mode="Markdown",
                                          reply_markup=premium_locked_keyboard())
+            await track_existing_message(user.id, call.message)
         except Exception:
-            await call.message.answer(text, parse_mode="Markdown",
-                                      reply_markup=premium_locked_keyboard())
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(
+                call.message,
+                user.id,
+                text,
+                parse_mode="Markdown",
+                reply_markup=premium_locked_keyboard(),
+            )
         await call.answer("🔒 Premium requis")
         return
 
@@ -178,7 +194,7 @@ async def cb_rq_analyse(call: CallbackQuery):
         f"│◉ *Niveau* : {signal['niveau']}\n"
         f"│◉ *Risque* : {signal['risque']} ✅\n"
         f"{SEP}\n"
-        f"code promo: `{settings.BOT_PROMO_CODE}`"
+        f"code promo: *{settings.BOT_PROMO_CODE}*"
     )
     await call.message.edit_text(text, parse_mode="Markdown",
                                  reply_markup=rocketqueen_menu_keyboard())

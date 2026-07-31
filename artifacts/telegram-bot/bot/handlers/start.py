@@ -9,6 +9,7 @@ from bot.services.settings_service import BotSettingsService
 from bot.keyboards.main_menu import main_menu_keyboard, language_keyboard, back_to_main_keyboard
 from bot.keyboards.admin import admin_approve_reject_keyboard
 from bot.utils.navigation import send_menu
+from bot.utils.message_cleaner import delete_incoming_message, send_tracked_message
 from config import settings
 from loguru import logger
 
@@ -46,11 +47,7 @@ async def _notify_admins_new_user(message: Message, db_user) -> None:
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession):
     # Keep the chat clean: remove the user's incoming /start command.
-    try:
-        await message.delete()
-    except Exception:
-        # Telegram may reject deletion in unusual chat types or after expiry.
-        pass
+    await delete_incoming_message(message)
 
     user = message.from_user
     svc = UserService(session)
@@ -68,12 +65,14 @@ async def cmd_start(message: Message, session: AsyncSession):
 
     # ── Banned ────────────────────────────────────────────────────────────────
     if db_user.is_banned:
-        await message.answer("🚫 Votre compte est banni.")
+        await send_tracked_message(message, user.id, "🚫 Votre compte est banni.")
         return
 
     # ── Rejected ──────────────────────────────────────────────────────────────
     if db_user.approval_status == "rejected":
-        await message.answer(
+        await send_tracked_message(
+            message,
+            user.id,
             f"🚫 *Accès refusé*\n\n{SEP}\n"
             "│◉ Votre demande d'accès a été *refusée*.\n"
             "│◉ Contactez le support si vous pensez qu'il s'agit d'une erreur.\n"
@@ -85,13 +84,15 @@ async def cmd_start(message: Message, session: AsyncSession):
     # ── Pending ───────────────────────────────────────────────────────────────
     if db_user.approval_status == "pending":
         is_new = getattr(db_user, "_is_new", False)
-        await message.answer(
+        await send_tracked_message(
+            message,
+            user.id,
             f"⏳ *Demande d'accès en cours...*\n\n{SEP}\n"
             "│◉ Votre compte est en attente d'approbation.\n"
             "│◉ Un admin va examiner votre demande.\n"
             "│◉ Vous serez notifié(e) dès l'approbation.\n"
             f"{SEP}\n\n"
-            f"🎁 Code promo pour 1WIN : `{settings.BOT_PROMO_CODE}`",
+            f"🎁 Code promo pour 1WIN : *{settings.BOT_PROMO_CODE}*",
             parse_mode="Markdown",
         )
         if is_new:
@@ -104,7 +105,7 @@ async def cmd_start(message: Message, session: AsyncSession):
 
     text = (
         f"🏆 *Bienvenue {user.first_name or 'Joueur'} !* 🎉\n\n"
-        f"◉ *1WIN GAME PREDICTOR* [`{settings.BOT_PROMO_CODE}`]\n\n"
+        f"◉ *1WIN GAME PREDICTOR* [*{settings.BOT_PROMO_CODE}*]\n\n"
         f"🔥 Activate the bot now and start winning! 🚀"
     )
     await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
@@ -120,7 +121,10 @@ async def cmd_menu(message: Message, session: AsyncSession):
 
 @router.message(Command("language"))
 async def cmd_language(message: Message):
-    await message.answer(
+    await delete_incoming_message(message)
+    await send_tracked_message(
+        message,
+        message.from_user.id,
         "🌍 *Choisissez votre langue :*",
         parse_mode="Markdown",
         reply_markup=language_keyboard(),
@@ -141,7 +145,7 @@ async def cmd_help(message: Message, session: AsyncSession):
         "│◉ `/language` — Changer de langue\n"
         "│◉ `/help` — Cette aide\n"
         f"{SEP}\n\n"
-        f"🎁 Code promo : `{settings.BOT_PROMO_CODE}`"
+        f"🎁 Code promo : *{settings.BOT_PROMO_CODE}*"
     )
     await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
 
