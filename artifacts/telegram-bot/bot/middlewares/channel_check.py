@@ -122,8 +122,10 @@ class ChannelCheckMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         # ── /start always passes through ───────────────────────────────────────
-        if isinstance(event, Message) and event.text and event.text.startswith("/start"):
-            return await handler(event, data)
+        if isinstance(event, Message) and event.text:
+            command = event.text.strip().split()[0].split("@")[0].casefold()
+            if command in {"/start", "start"}:
+                return await handler(event, data)
 
         # ── Verification button passes through ─────────────────────────────────
         if isinstance(event, CallbackQuery) and event.data == "sub:check":

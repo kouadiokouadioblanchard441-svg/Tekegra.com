@@ -26,8 +26,10 @@ class BanCheckMiddleware(BaseMiddleware):
         # • pending/rejected users can re-check their status
         # Banned users are NOT bypassed here — ban_check below will catch them
         # AND start.py also explicitly checks is_banned for /start.
-        if isinstance(event, Message) and event.text and event.text.startswith("/start"):
-            return await handler(event, data)
+        if isinstance(event, Message) and event.text:
+            command = event.text.strip().split()[0].split("@")[0].casefold()
+            if command in {"/start", "start"}:
+                return await handler(event, data)
 
         user = data.get("event_from_user")
         if user is None:

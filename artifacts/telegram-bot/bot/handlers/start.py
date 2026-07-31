@@ -111,6 +111,12 @@ async def cmd_start(message: Message, session: AsyncSession):
     await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
 
 
+@router.message(F.text.casefold() == "start")
+async def cmd_start_text(message: Message, session: AsyncSession):
+    """Accept plain `start` text as a user-friendly alias for /start."""
+    await cmd_start(message, session)
+
+
 @router.message(Command("menu"))
 async def cmd_menu(message: Message, session: AsyncSession):
     bss = BotSettingsService(session)
