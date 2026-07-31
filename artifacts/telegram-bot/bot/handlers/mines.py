@@ -7,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.signals import generate_mines_signal
 from bot.services.user_service import UserService
 from bot.utils.formatters import format_mines_signal, format_countdown
-from bot.utils.message_cleaner import delete_previous_signal, track_signal_message
+from bot.utils.message_cleaner import (
+    delete_previous_signal,
+    track_signal_message,
+    schedule_delete,
+)
 from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard, mines_choose_keyboard
 from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
@@ -75,6 +79,7 @@ async def _send_mines_signal(
     )
     await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
     track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
+    schedule_delete(loading.chat.id, loading.message_id)
 
 
 # ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────

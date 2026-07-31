@@ -1,17 +1,23 @@
-"""Tracks signal messages per user and deletes the previous one when a new one is requested.
+"""Keeps signal messages for ten minutes and replaces them on a new request.
 
 Rules:
   • signal messages are sent as *new* messages (not edits).
-  • when a new signal is requested, delete_previous_signal() removes the old one first.
-  • signals are never auto-deleted by a timer — they stay until the next request.
+  • a signal is automatically deleted after 600 seconds.
+  • when a new signal is requested, delete_previous_signal() removes the old
+    signal immediately, before the new one is displayed.
 """
 import asyncio
+import time
 from loguru import logger
+
+# {(chat_id, message_id): delete_at_unix_timestamp}
+_pending: dict[tuple[int, int], float] = {}
 
 # Last signal message per user: {user_id: (chat_id, message_id)}
 _last_signal: dict[int, tuple[int, int]] = {}
 
 _bot = None
+SIGNAL_TTL_SECONDS = 10 * 60
 
 
 def init_cleaner(bot) -> None:
@@ -31,6 +37,12 @@ async def delete_previous_signal(user_id: int) -> None:
         logger.debug(f"MessageCleaner: deleted previous signal msg {message_id} for user {user_id}")
     except Exception:
         pass  # Already deleted or bot lacks permission — ignore silently
+    _pending.pop((chat_id, message_id), None)
+
+
+def schedule_delete(chat_id: int, message_id: int, delete_in_seconds: float = SIGNAL_TTL_SECONDS) -> None:
+    """Schedule a signal message for deletion after the configured TTL."""
+    _pending[(chat_id, message_id)] = time.time() + delete_in_seconds
 
 
 def track_signal_message(user_id: int, chat_id: int, message_id: int) -> None:
@@ -47,7 +59,29 @@ def clear_signal_tracking(user_id: int) -> None:
     _last_signal.pop(user_id, None)
 
 
+async def _cleaner_loop() -> None:
+    """Delete expired signals in the background."""
+    while True:
+        await asyncio.sleep(5)
+        if not _pending or _bot is None:
+            continue
+
+        now = time.time()
+        expired = [(key, deadline) for key, deadline in list(_pending.items()) if deadline <= now]
+        for (chat_id, message_id), _ in expired:
+            try:
+                await _bot.delete_message(chat_id=chat_id, message_id=message_id)
+                logger.debug(f"MessageCleaner: deleted expired signal msg {message_id}")
+            except Exception:
+                pass  # Already deleted or no permission — ignore silently
+            _pending.pop((chat_id, message_id), None)
+            for user_id, (tracked_chat_id, tracked_message_id) in list(_last_signal.items()):
+                if tracked_chat_id == chat_id and tracked_message_id == message_id:
+                    _last_signal.pop(user_id, None)
+
+
 def start_cleaner(bot) -> None:
-    """Attach the bot instance. No background loop needed anymore."""
+    """Attach the bot instance and start the expiry loop."""
     init_cleaner(bot)
-    logger.info("✅ MessageCleaner started (on-demand deletion mode)")
+    asyncio.create_task(_cleaner_loop())
+    logger.info("✅ MessageCleaner started (signals expire after 10 minutes)")

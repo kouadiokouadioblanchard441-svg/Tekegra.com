@@ -45,6 +45,13 @@ async def _notify_admins_new_user(message: Message, db_user) -> None:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession):
+    # Keep the chat clean: remove the user's incoming /start command.
+    try:
+        await message.delete()
+    except Exception:
+        # Telegram may reject deletion in unusual chat types or after expiry.
+        pass
+
     user = message.from_user
     svc = UserService(session)
     db_user = await svc.get_or_create(

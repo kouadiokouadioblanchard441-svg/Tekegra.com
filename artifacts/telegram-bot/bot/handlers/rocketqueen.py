@@ -7,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.signals import generate_rocketqueen_signal
 from bot.services.user_service import UserService
 from bot.utils.formatters import format_rocketqueen_signal, format_countdown
-from bot.utils.message_cleaner import delete_previous_signal, track_signal_message
+from bot.utils.message_cleaner import (
+    delete_previous_signal,
+    track_signal_message,
+    schedule_delete,
+)
 from bot.keyboards.rocketqueen import (
     rocketqueen_menu_keyboard,
     rocketqueen_after_signal_keyboard,
@@ -32,6 +36,7 @@ async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None
     await asyncio.sleep(0.6)
     await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
     track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
+    schedule_delete(loading.chat.id, loading.message_id)
 
 
 @router.callback_query(F.data.startswith("rq:signal_free:"))

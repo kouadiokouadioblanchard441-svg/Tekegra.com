@@ -78,7 +78,7 @@ async def main():
     # Include all routers
     dp.include_router(get_main_router())
 
-    # Start background task — auto-deletes signal messages after game time + 2 min
+    # Start background task — expires signal messages after 10 minutes
     start_cleaner(bot)
 
     # Start polling
