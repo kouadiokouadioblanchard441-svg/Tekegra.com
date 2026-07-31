@@ -74,8 +74,10 @@ export interface BotSettings {
   affiliateLink: string;
   freeSignalsPerDay: number;
   premiumSignalsPerDay: number;
+  channel1Id?: string;
   channel1Link: string;
   channel1Name: string;
+  channel2Id?: string;
   channel2Link: string;
   channel2Name: string;
   supportUsername?: string;
@@ -98,8 +100,10 @@ export interface BotSettingsInput {
   affiliateLink?: string;
   freeSignalsPerDay?: number;
   premiumSignalsPerDay?: number;
+  channel1Id?: string;
   channel1Link?: string;
   channel1Name?: string;
+  channel2Id?: string;
   channel2Link?: string;
   channel2Name?: string;
   supportUsername?: string;

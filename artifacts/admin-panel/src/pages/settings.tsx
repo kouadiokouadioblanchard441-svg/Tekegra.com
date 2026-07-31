@@ -62,8 +62,10 @@ export default function Settings() {
       affiliateLink: data.affiliateLink,
       freeSignalsPerDay: Number(data.freeSignalsPerDay),
       premiumSignalsPerDay: Number(data.premiumSignalsPerDay),
+      channel1Id: data.channel1Id,
       channel1Link: data.channel1Link,
       channel1Name: data.channel1Name,
+      channel2Id: data.channel2Id,
       channel2Link: data.channel2Link,
       channel2Name: data.channel2Name,
       supportUsername: data.supportUsername,
@@ -156,11 +158,20 @@ export default function Settings() {
           <Card className="shadow-sm border-border/50 lg:col-span-2">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Canaux requis</CardTitle>
-              <CardDescription>Canaux auxquels les utilisateurs doivent s'abonner</CardDescription>
+              <CardDescription>
+                Les utilisateurs doivent rejoindre ces canaux avant d'utiliser le bot.
+                L'ID est nécessaire pour vérifier l'abonnement (ex&nbsp;: <code className="text-xs bg-muted px-1 rounded">-1001234567890</code>).
+                Laisse l'ID vide pour désactiver la vérification de ce canal.
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3 p-4 border rounded-md bg-muted/20">
                 <div className="font-medium text-sm">Canal principal</div>
+                <div className="space-y-2">
+                  <Label>ID du canal <span className="text-muted-foreground font-normal">(active la vérification)</span></Label>
+                  <Input {...register("channel1Id")} placeholder="-1001234567890" className="font-mono text-sm" />
+                  <p className="text-xs text-muted-foreground">Ajoute le bot comme admin du canal pour qu'il puisse vérifier les membres.</p>
+                </div>
                 <div className="space-y-2">
                   <Label>Nom du canal</Label>
                   <Input {...register("channel1Name")} placeholder="Signaux Officiels" />
@@ -171,7 +182,11 @@ export default function Settings() {
                 </div>
               </div>
               <div className="space-y-3 p-4 border rounded-md bg-muted/20">
-                <div className="font-medium text-sm">Canal secondaire</div>
+                <div className="font-medium text-sm">Canal secondaire <span className="text-muted-foreground font-normal text-xs">(optionnel)</span></div>
+                <div className="space-y-2">
+                  <Label>ID du canal</Label>
+                  <Input {...register("channel2Id")} placeholder="-1001234567890" className="font-mono text-sm" />
+                </div>
                 <div className="space-y-2">
                   <Label>Nom du canal</Label>
                   <Input {...register("channel2Name")} placeholder="Canal VIP" />

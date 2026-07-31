@@ -413,9 +413,13 @@ components:
           type: integer
         premiumSignalsPerDay:
           type: integer
+        channel1Id:
+          type: string
         channel1Link:
           type: string
         channel1Name:
+          type: string
+        channel2Id:
           type: string
         channel2Link:
           type: string
@@ -449,9 +453,13 @@ components:
           type: integer
         premiumSignalsPerDay:
           type: integer
+        channel1Id:
+          type: string
         channel1Link:
           type: string
         channel1Name:
+          type: string
+        channel2Id:
           type: string
         channel2Link:
           type: string
