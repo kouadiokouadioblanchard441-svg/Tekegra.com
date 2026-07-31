@@ -1,4 +1,4 @@
-"""Mines signal and analysis handlers — with interactive 5×5 grid."""
+"""Mines signal handlers — signals sent as new messages, deleted on next request."""
 import asyncio
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.signals import generate_mines_signal
 from bot.services.user_service import UserService
 from bot.utils.formatters import format_mines_signal, format_countdown
+from bot.utils.message_cleaner import delete_previous_signal, track_signal_message
 from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard, mines_choose_keyboard
 from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
@@ -18,83 +19,7 @@ router = Router()
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 
-# ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
-@router.callback_query(F.data == "mines:choose_type")
-async def cb_mines_choose_type(call: CallbackQuery, session: AsyncSession):
-    """Affiche le choix Gratuit / Premium avant de générer la grille."""
-    user = call.from_user
-    svc = UserService(session)
-    db_user = await svc.get_or_create(
-        telegram_id=user.id,
-        username=user.username,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        language_code=user.language_code,
-    )
-    remaining = settings.FREE_SIGNALS_TOTAL - db_user.free_signals_used_total
-    remaining = max(0, remaining)
-
-    text = (
-        "💣 *MINES — Choisissez votre signal*\n\n"
-        f"{SEP}\n"
-        f"│◉ Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*\n"
-        f"│◉ Premium : signaux *illimités* ⭐\n"
-        f"{SEP}\n\n"
-        "👇 Sélectionnez le type de signal :"
-    )
-    await call.message.edit_text(
-        text,
-        parse_mode="Markdown",
-        reply_markup=mines_choose_keyboard(remaining, settings.FREE_SIGNALS_TOTAL),
-    )
-    await call.answer()
-
-
-# ── Simplified GET SIGNAL (new menu flow) ─────────────────────────────────────
-@router.callback_query(F.data == "mines:get_signal")
-async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
-    """New simplified mines signal button."""
-    user = call.from_user
-    svc = UserService(session)
-    db_user = await svc.get_or_create(
-        telegram_id=user.id,
-        username=user.username,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        language_code=user.language_code,
-    )
-
-    await call.message.edit_text("⏳ *Chargement du signal Mines...*", parse_mode="Markdown")
-    await asyncio.sleep(0.5)
-
-    is_premium = db_user.is_premium
-
-    if is_premium:
-        signal = generate_mines_signal(is_premium=True)
-        await svc.consume_premium_signal(db_user)
-    else:
-        allowed, remaining = await svc.try_consume_free_signal(db_user)
-        if not allowed:
-            text = (
-                f"⛔ *Quota gratuit épuisé*\n\n{SEP}\n"
-                f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
-                f"│◉ Passe Premium pour continuer 🚀\n"
-                f"{SEP}\n\n⭐ Abonne-toi pour des signaux *illimités* !"
-            )
-            await call.message.edit_text(text, parse_mode="Markdown",
-                                         reply_markup=premium_locked_keyboard())
-            await call.answer("⛔ Quota gratuit épuisé")
-            return
-        signal = generate_mines_signal(is_premium=False)
-
-    await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
-    await _show_mines_grid(call, signal, is_premium=is_premium)
-    await call.answer("✅ Grille générée !")
-    logger.info(f"Mines get_signal for user {user.id} (premium={is_premium})")
-
-
 def _render_grid_text(grid: list[list[str]]) -> str:
-    """Render the 5×5 grid as compact text. ⭐ stays visible, mines hidden as ▫️."""
     rows = []
     for row in grid:
         cells = []
@@ -127,21 +52,100 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
     return "\n".join(lines)
 
 
-async def _show_mines_grid(
+async def _send_mines_signal(
     call: CallbackQuery,
     signal: dict,
     is_premium: bool,
     remaining: int | None = None,
-):
-    """Send the analysis header then edit into the 5×5 grid keyboard."""
+) -> None:
+    """Delete trigger message, send loading, then edit to the final mines grid."""
+    try:
+        await call.message.delete()
+    except Exception:
+        pass
+
+    loading = await call.message.answer("⏳ *Analyse de la grille...*", parse_mode="Markdown")
+    await asyncio.sleep(0.6)
+
     header = _grid_header(signal, is_premium, remaining)
-    grid = signal.get("grid", [])
     keyboard = mines_grid_keyboard(
-        grid=grid,
+        grid=signal.get("grid", []),
         is_premium=is_premium,
         affiliate_link=settings.BOT_AFFILIATE_LINK,
     )
-    await call.message.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
+    await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
+    track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
+
+
+# ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
+@router.callback_query(F.data == "mines:choose_type")
+async def cb_mines_choose_type(call: CallbackQuery, session: AsyncSession):
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+    remaining = settings.FREE_SIGNALS_TOTAL - db_user.free_signals_used_total
+    remaining = max(0, remaining)
+
+    text = (
+        "💣 *MINES — Choisissez votre signal*\n\n"
+        f"{SEP}\n"
+        f"│◉ Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*\n"
+        f"│◉ Premium : signaux *illimités* ⭐\n"
+        f"{SEP}\n\n"
+        "👇 Sélectionnez le type de signal :"
+    )
+    await call.message.edit_text(
+        text,
+        parse_mode="Markdown",
+        reply_markup=mines_choose_keyboard(remaining, settings.FREE_SIGNALS_TOTAL),
+    )
+    await call.answer()
+
+
+# ── Simplified GET SIGNAL ─────────────────────────────────────────────────────
+@router.callback_query(F.data == "mines:get_signal")
+async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+
+    await delete_previous_signal(user.id)
+    is_premium = db_user.is_premium
+
+    if is_premium:
+        signal = generate_mines_signal(is_premium=True)
+        await svc.consume_premium_signal(db_user)
+    else:
+        allowed, remaining = await svc.try_consume_free_signal(db_user)
+        if not allowed:
+            text = (
+                f"⛔ *Quota gratuit épuisé*\n\n{SEP}\n"
+                f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
+                f"│◉ Passe Premium pour continuer 🚀\n"
+                f"{SEP}\n\n⭐ Abonne-toi pour des signaux *illimités* !"
+            )
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+            await call.answer("⛔ Quota gratuit épuisé")
+            return
+        signal = generate_mines_signal(is_premium=False)
+
+    await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
+    await _send_mines_signal(call, signal, is_premium=is_premium)
+    await call.answer("✅ Grille générée !")
+    logger.info(f"Mines get_signal for user {user.id} (premium={is_premium})")
 
 
 @router.callback_query(F.data == "mines:signal_free")
@@ -156,8 +160,7 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await call.message.edit_text("⏳ *Chargement du signal Mines...*", parse_mode="Markdown")
-    await asyncio.sleep(0.5)
+    await delete_previous_signal(user.id)
 
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
@@ -169,14 +172,18 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
             f"{SEP}\n\n"
             "⭐ Abonne-toi pour des signaux *illimités* !"
         )
-        await call.message.edit_text(text, parse_mode="Markdown",
-                                     reply_markup=premium_locked_keyboard())
+        try:
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+        except Exception:
+            await call.message.answer(text, parse_mode="Markdown",
+                                      reply_markup=premium_locked_keyboard())
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
     signal = generate_mines_signal(is_premium=False)
     await svc.save_signal(user.id, "mines", signal, is_premium=False)
-    await _show_mines_grid(call, signal, is_premium=False, remaining=remaining)
+    await _send_mines_signal(call, signal, is_premium=False, remaining=remaining)
     await call.answer("✅ Grille Mines générée !")
     logger.info(f"Free Mines grid for user {user.id} — {signal['mines']} mines")
 
@@ -203,23 +210,26 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
             f"{SEP}\n\n"
             "⭐ Passe Premium pour débloquer !"
         )
-        await call.message.edit_text(text, parse_mode="Markdown",
-                                     reply_markup=premium_locked_keyboard())
+        try:
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+        except Exception:
+            await call.message.answer(text, parse_mode="Markdown",
+                                      reply_markup=premium_locked_keyboard())
         await call.answer("🔒 Premium requis")
         return
 
-    await call.message.edit_text("⏳ *Chargement du signal Premium Mines...*", parse_mode="Markdown")
-    await asyncio.sleep(0.5)
+    await delete_previous_signal(user.id)
 
     signal = generate_mines_signal(is_premium=True)
     await svc.consume_premium_signal(db_user)
     await svc.save_signal(user.id, "mines", signal, is_premium=True)
-    await _show_mines_grid(call, signal, is_premium=True)
+    await _send_mines_signal(call, signal, is_premium=True)
     await call.answer("⭐ Grille Premium Mines générée !")
     logger.info(f"Premium Mines grid for user {user.id} — {signal['mines']} mines")
 
 
-# Tap on a cell — just acknowledge, grid is read-only prediction display
+# Tap on a cell — just acknowledge
 @router.callback_query(F.data.startswith("mines:cell:"))
 async def cb_cell_tap(call: CallbackQuery):
     parts = call.data.split(":")
@@ -236,9 +246,14 @@ async def cb_cell_tap(call: CallbackQuery):
 async def cb_mines_analyse(call: CallbackQuery):
     await call.message.edit_text("⏳ *Chargement Mines...*", parse_mode="Markdown")
     await asyncio.sleep(0.5)
-
     signal = generate_mines_signal(is_premium=False)
-    await _show_mines_grid(call, signal, is_premium=False)
+    header = _grid_header(signal, is_premium=False)
+    keyboard = mines_grid_keyboard(
+        grid=signal.get("grid", []),
+        is_premium=False,
+        affiliate_link=settings.BOT_AFFILIATE_LINK,
+    )
+    await call.message.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
     await call.answer()
 
 

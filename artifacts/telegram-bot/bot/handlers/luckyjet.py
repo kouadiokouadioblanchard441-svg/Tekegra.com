@@ -1,4 +1,4 @@
-"""Lucky Jet signal and analysis handlers — with petite/grosse cote and auto-delete."""
+"""Lucky Jet signal handlers — signals sent as new messages, deleted on next request."""
 import asyncio
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
@@ -9,7 +9,7 @@ from bot.services.user_service import UserService
 from bot.utils.formatters import (
     format_luckyjet_signal, format_luckyjet_analysis,
 )
-from bot.utils.message_cleaner import schedule_delete, delete_previous_signal, track_signal_message
+from bot.utils.message_cleaner import delete_previous_signal, track_signal_message
 from bot.keyboards.luckyjet import (
     luckyjet_menu_keyboard,
     luckyjet_after_signal_keyboard,
@@ -23,6 +23,20 @@ from loguru import logger
 router = Router()
 
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
+
+
+async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None:
+    """Delete trigger message, send loading, then edit to final signal."""
+    # Delete the trigger message (choice screen / game menu) — silently ignore if already gone
+    try:
+        await call.message.delete()
+    except Exception:
+        pass
+    # Send a fresh loading message in the same chat
+    loading = await call.message.answer("⏳ *Analyse en cours...*", parse_mode="Markdown")
+    await asyncio.sleep(0.6)
+    await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
 
 
 # ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
@@ -57,11 +71,9 @@ async def cb_lj_choose_type(call: CallbackQuery, session: AsyncSession):
     await call.answer()
 
 
-# ── Simplified GET SIGNAL (new menu flow) ─────────────────────────────────────
+# ── Simplified GET SIGNAL (free auto-cote) ────────────────────────────────────
 @router.callback_query(F.data == "lj:get_signal")
 async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
-    """New simplified signal button — auto cote, free or premium."""
-    from bot.keyboards.main_menu import luckyjet_after_signal_keyboard
     user = call.from_user
     svc = UserService(session)
     db_user = await svc.get_or_create(
@@ -73,9 +85,6 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
     )
 
     await delete_previous_signal(user.id)
-    await call.message.edit_text("⏳ *Chargement du signal Lucky Jet...*", parse_mode="Markdown")
-    await asyncio.sleep(0.5)
-
     is_premium = db_user.is_premium
 
     if is_premium:
@@ -114,13 +123,8 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         verification_code=signal.get("verification_code", ""),
         rounds_analysed=signal.get("rounds_analysed", 0),
     )
-
-    await call.message.edit_text(
-        text, parse_mode="Markdown",
-        reply_markup=luckyjet_after_signal_keyboard(),
-    )
-    track_signal_message(user.id, call.message.chat.id, call.message.message_id)
-    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
+    kb = luckyjet_after_signal_keyboard() if not is_premium else luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, "grosse")
+    await _send_signal_message(call, text, kb)
     await call.answer("✅ Signal généré !")
     logger.info(f"LJ get_signal for user {user.id} (premium={is_premium})")
 
@@ -138,13 +142,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     await delete_previous_signal(user.id)
-    await call.message.edit_text(
-        f"⏳ *Chargement du signal Lucky Jet [{label}]...*",
-        parse_mode="Markdown",
-    )
-    await asyncio.sleep(0.5)
 
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
@@ -156,8 +154,13 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
             f"{SEP}\n\n"
             "⭐ Abonne-toi pour des signaux *illimités* !"
         )
-        await call.message.edit_text(text, parse_mode="Markdown",
-                                     reply_markup=premium_locked_keyboard())
+        # Try to edit in place; if trigger was already deleted, send fresh
+        try:
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+        except Exception:
+            await call.message.answer(text, parse_mode="Markdown",
+                                      reply_markup=premium_locked_keyboard())
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
@@ -181,16 +184,10 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         rounds_analysed=signal.get("rounds_analysed", 0),
     )
 
-    await call.message.edit_text(
-        text,
-        parse_mode="Markdown",
-        reply_markup=luckyjet_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+    await _send_signal_message(
+        call, text,
+        luckyjet_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
-
-    # Auto-delete 2 minutes after game time
-    track_signal_message(user.id, call.message.chat.id, call.message.message_id)
-    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
-
     await call.answer("✅ Signal généré !")
     logger.info(f"Free LJ {cote_type} signal for user {user.id}")
 
@@ -218,20 +215,16 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
             f"│◉ Analyses IA avancées\n"
             f"{SEP}"
         )
-        await call.message.edit_text(
-            text, parse_mode="Markdown",
-            reply_markup=premium_locked_keyboard(),
-        )
+        try:
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+        except Exception:
+            await call.message.answer(text, parse_mode="Markdown",
+                                      reply_markup=premium_locked_keyboard())
         await call.answer("🔒 Premium requis")
         return
 
-    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     await delete_previous_signal(user.id)
-    await call.message.edit_text(
-        f"⏳ *Chargement du signal Premium Lucky Jet [{label}]...*",
-        parse_mode="Markdown",
-    )
-    await asyncio.sleep(0.5)
 
     signal = generate_luckyjet_signal(is_premium=True, cote_type=cote_type)
     await svc.consume_premium_signal(db_user)
@@ -254,15 +247,10 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
         rounds_analysed=signal.get("rounds_analysed", 0),
     )
 
-    await call.message.edit_text(
-        text,
-        parse_mode="Markdown",
-        reply_markup=luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+    await _send_signal_message(
+        call, text,
+        luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
-
-    track_signal_message(user.id, call.message.chat.id, call.message.message_id)
-    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
-
     await call.answer("⭐ Signal Premium généré !")
     logger.info(f"Premium LJ {cote_type} signal for user {user.id}")
 

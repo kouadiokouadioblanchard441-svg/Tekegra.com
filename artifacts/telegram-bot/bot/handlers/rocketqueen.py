@@ -1,4 +1,4 @@
-"""Rocket Queen signal and analysis handlers."""
+"""Rocket Queen signal handlers — signals sent as new messages, deleted on next request."""
 import asyncio
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.signals import generate_rocketqueen_signal
 from bot.services.user_service import UserService
 from bot.utils.formatters import format_rocketqueen_signal, format_countdown
-from bot.utils.message_cleaner import schedule_delete
+from bot.utils.message_cleaner import delete_previous_signal, track_signal_message
 from bot.keyboards.rocketqueen import (
     rocketqueen_menu_keyboard,
     rocketqueen_after_signal_keyboard,
@@ -22,9 +22,21 @@ router = Router()
 SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 
+async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None:
+    """Delete trigger message, send loading, then edit to final signal."""
+    try:
+        await call.message.delete()
+    except Exception:
+        pass
+    loading = await call.message.answer("⏳ *Analyse en cours...*", parse_mode="Markdown")
+    await asyncio.sleep(0.6)
+    await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
+
+
 @router.callback_query(F.data.startswith("rq:signal_free:"))
 async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
-    cote_type = call.data.split(":")[-1]  # "petite" or "grosse"
+    cote_type = call.data.split(":")[-1]
     user = call.from_user
     svc = UserService(session)
     db_user = await svc.get_or_create(
@@ -35,12 +47,7 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
-    await call.message.edit_text(
-        f"⏳ *Chargement du signal Rocket Queen [{label}]...*",
-        parse_mode="Markdown",
-    )
-    await asyncio.sleep(0.5)
+    await delete_previous_signal(user.id)
 
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
@@ -52,8 +59,12 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
             f"{SEP}\n\n"
             "⭐ Abonne-toi pour des signaux *illimités* !"
         )
-        await call.message.edit_text(text, parse_mode="Markdown",
-                                     reply_markup=premium_locked_keyboard())
+        try:
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+        except Exception:
+            await call.message.answer(text, parse_mode="Markdown",
+                                      reply_markup=premium_locked_keyboard())
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
@@ -78,13 +89,10 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
     text += f"\n\n🎯 Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*"
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
-    await call.message.edit_text(
-        text, parse_mode="Markdown",
-        reply_markup=rocketqueen_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+    await _send_signal_message(
+        call, text,
+        rocketqueen_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
-
-    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
-
     await call.answer("✅ Signal Rocket Queen généré !")
     logger.info(f"Free RQ {cote_type} signal for user {user.id}")
 
@@ -112,17 +120,16 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
             f"{SEP}\n\n"
             "⭐ Passe Premium pour débloquer !"
         )
-        await call.message.edit_text(text, parse_mode="Markdown",
-                                     reply_markup=premium_locked_keyboard())
+        try:
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=premium_locked_keyboard())
+        except Exception:
+            await call.message.answer(text, parse_mode="Markdown",
+                                      reply_markup=premium_locked_keyboard())
         await call.answer("🔒 Premium requis")
         return
 
-    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
-    await call.message.edit_text(
-        f"⏳ *Chargement du signal Premium Rocket Queen [{label}]...*",
-        parse_mode="Markdown",
-    )
-    await asyncio.sleep(0.5)
+    await delete_previous_signal(user.id)
 
     signal = generate_rocketqueen_signal(is_premium=True, cote_type=cote_type)
     await svc.consume_premium_signal(db_user)
@@ -145,13 +152,10 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
     )
     text += f"\n\n{format_countdown(signal['countdown'])}"
 
-    await call.message.edit_text(
-        text, parse_mode="Markdown",
-        reply_markup=rocketqueen_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+    await _send_signal_message(
+        call, text,
+        rocketqueen_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
     )
-
-    schedule_delete(call.message.chat.id, call.message.message_id, delete_in_seconds=30)
-
     await call.answer("⭐ Signal Premium Rocket Queen généré !")
     logger.info(f"Premium RQ {cote_type} signal for user {user.id}")
 
