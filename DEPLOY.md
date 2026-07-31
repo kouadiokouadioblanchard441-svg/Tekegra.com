@@ -15,6 +15,14 @@
 └──────────────────────────────────────────────────┘
 ```
 
+> ⚠️ **Limite importante :** Vercel Functions sont stateless et ne gardent pas
+> un processus Python actif entre deux requêtes. Le webhook répond bien aux
+> messages Telegram, mais les tâches d'arrière-plan (comme la suppression
+> automatique des signaux après 10 minutes) ne fonctionnent pas de manière
+> fiable dans cette architecture. Pour ce comportement et un bot réellement
+> continu, utilisez un déploiement **VM** ou un hébergeur qui maintient le
+> processus Python actif.
+
 ---
 
 ## Étape 1 — Pousser le code sur GitHub
@@ -53,12 +61,16 @@ git push -u origin main
 | `ADMIN_PASSWORD` | Mot de passe du panneau admin | `MonMotDePasse2024!` |
 | `SESSION_SECRET` | Clé JWT aléatoire (32+ caractères) | `xK9mP2qL7nR4vW8yZ1aB3cD5eF` |
 | `ADMIN_IDS` | Tes IDs Telegram admin (virgule-séparé) | `123456789` |
-| `CHANNEL_1_ID` | ID de ta chaîne obligatoire (si activé) | `-1001234567890` |
-| `CHANNEL_1_LINK` | Lien de ta chaîne | `https://t.me/moncanal` |
-| `CHANNEL_1_NAME` | Nom affiché | `📢 Canal Officiel` |
+| `CHANNEL_1_ID` | _(optionnel)_ Ancienne configuration de chaîne | `-1001234567890` |
+| `CHANNEL_1_LINK` | _(optionnel)_ Lien de chaîne | `https://t.me/moncanal` |
+| `CHANNEL_1_NAME` | _(optionnel)_ Nom affiché | `📢 Canal Officiel` |
 
 > ⚠️ `SUPABASE_DATABASE_URL` : utilise le **Session pooler (port 5432)** obligatoirement,
 > **pas** le Transaction pooler (port 6543).
+>
+> Les chaînes obligatoires se configurent désormais dans **Panel admin →
+> Configuration → Canaux requis**. L'ID numérique et le lien sont enregistrés
+> dans la base de données.
 
 ---
 
@@ -135,7 +147,7 @@ Ces variables peuvent être ajoutées dans Vercel → Settings → Environment V
 |----------|--------|-------------|
 | `BOT_PROMO_CODE` | `JRYVES` | Code promo 1WIN affiché dans les signaux |
 | `BOT_AFFILIATE_LINK` | _(vide)_ | Lien d'inscription 1WIN |
-| `FREE_SIGNALS_PER_DAY` | `6` | Signaux gratuits par jour |
+| `FREE_SIGNALS_TOTAL` | `10` | Quota gratuit total par utilisateur |
 | `PREMIUM_SIGNALS_PER_DAY` | `9` | Signaux premium par jour |
 | `CHANNEL_2_ID` | _(vide)_ | 2ème chaîne obligatoire |
 | `CHANNEL_2_LINK` | _(vide)_ | Lien 2ème chaîne |

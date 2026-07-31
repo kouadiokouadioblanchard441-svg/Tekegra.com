@@ -1,3 +1,4 @@
 - [Supabase PgBouncer fix](supabase-pgbouncer.md) — asyncpg + SQLAlchemy with Supabase transaction pooler needs statement_cache_size=0 in connect_args
 - [pnpm version mismatch fix](pnpm-version-fix.md) — project declares pnpm@9.15.9 but Replit runs 10.x; fix via manage-package-manager-versions=false in .npmrc
 - [Admin panel build fix](admin-panel-build.md) — two broken imports fixed; re-export bridge and Sidebar import path
+- [Vercel serverless bot limits](vercel-serverless-limits.md) — webhook functions are stateless; timed background cleanup needs durable storage and scheduling
