@@ -44,7 +44,7 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
         f"🎯 *MINES PREDICTION* [{badge}]",
         SEP,
         f"|●>*HEURE : {signal['heure']}* ⏰",
-        f"|●>*PIÈGES : {signal['mines']} mines* 💣",
+        f"|●>*PIÈGES : 3 mines* 💣",
         f"|●>*RISQUE : {signal['risque']}* ⚠️",
         f"|●>*CONFIANCE : {signal['confidence']}%* 🎯",
         SEP,

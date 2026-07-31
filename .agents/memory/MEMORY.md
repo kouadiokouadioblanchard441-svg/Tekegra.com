@@ -4,3 +4,4 @@
 - [Vercel serverless bot limits](vercel-serverless-limits.md) — webhook functions are stateless; timed background cleanup needs durable storage and scheduling
 - [Signal timing](signal-timing.md) — signal play time should be exactly two minutes after the request
 - [Telegram message cleanup](telegram-message-cleanup.md) — track edited and newly sent bot responses under one per-user message lifecycle
+- [Mines display](mines-display.md) — always show “PIÈGES : 3 mines” in the user-facing Mines prediction

@@ -113,7 +113,7 @@ def format_mines_signal(
         f"🎯 *MINES ANALYSE* [{badge}]\n"
         f"{SEP}\n"
         f"│◉➤ *HEURE* : {heure} ⏰\n"
-        f"│◉➤ *Difficulté* : {mines} mines\n"
+        f"│◉➤ *Difficulté* : 3 mines\n"
         f"│◉➤ *Niveau conseillé* : {niveau}\n"
         f"│◉➤ *Gestion du risque* : {risque} ✅\n"
         f"{SEP}\n"
