@@ -46,7 +46,8 @@ git push -u origin main
 1. Va sur [vercel.com/new](https://vercel.com/new)
 2. Clique **"Add New Project"** → **"Import Git Repository"**
 3. Sélectionne ton dépôt GitHub
-4. Vercel détecte le `vercel.json` — **ne modifie rien** aux paramètres de build
+4. Dans **Root Directory**, sélectionne la racine du dépôt (`./`, pas `artifacts/admin-panel`)
+5. Vercel doit utiliser le seul `vercel.json` situé à la racine — **ne modifie rien** aux paramètres de build
 
 ---
 
