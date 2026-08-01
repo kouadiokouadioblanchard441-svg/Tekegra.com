@@ -381,7 +381,7 @@ router.post("/admin/broadcast", requireAuth, async (req, res) => {
   const { message } = req.body as { message: string };
   if (!message?.trim()) { res.status(400).json({ error: "Message required" }); return; }
 
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const BOT_TOKEN = process.env.BOT_TOKEN;
   if (!BOT_TOKEN) { res.status(500).json({ error: "Bot token not configured" }); return; }
 
   const { rows: users } = await pool.query(

@@ -8,8 +8,8 @@
 │                                                   │
 │  /              → Panneau Admin (React)           │
 │  /api/*         → API Express Node.js (serverless)│
-│  /webhook       → Bot Telegram Python (serverless)│
-│  /setup         → Setup unique (enregistre webhook│
+│  /api/webhook   → Bot Telegram Python (serverless)│
+│  /api/webhook/* → Gestion sécurisée du webhook       │
 │                                                   │
 │  DB : Supabase PostgreSQL (partagée)              │
 └──────────────────────────────────────────────────┘
@@ -57,10 +57,10 @@ git push -u origin main
 | Variable | Description | Exemple |
 |----------|-------------|---------|
 | `SUPABASE_DATABASE_URL` | URL Supabase **Session pooler (port 5432)** | `postgresql://postgres.xxx:pass@aws-0-eu.pooler.supabase.com:5432/postgres` |
-| `TELEGRAM_BOT_TOKEN` | Token du bot (@BotFather) | `7123456789:AAHdqTcvCH1vG...` |
+| `BOT_TOKEN` | Token du bot (@BotFather) | secret |
 | `ADMIN_PASSWORD` | Mot de passe du panneau admin | `MonMotDePasse2024!` |
 | `SESSION_SECRET` | Clé JWT aléatoire (32+ caractères) | `xK9mP2qL7nR4vW8yZ1aB3cD5eF` |
-| `ADMIN_IDS` | Tes IDs Telegram admin (virgule-séparé) | `123456789` |
+| `ADMIN_ID` | ID Telegram admin | `123456789` |
 | `CHANNEL_1_ID` | _(optionnel)_ Ancienne configuration de chaîne | `-1001234567890` |
 | `CHANNEL_1_LINK` | _(optionnel)_ Lien de chaîne | `https://t.me/moncanal` |
 | `CHANNEL_1_NAME` | _(optionnel)_ Nom affiché | `📢 Canal Officiel` |
@@ -84,27 +84,22 @@ Clique **"Deploy"**. Le build prend ~2–3 minutes :
 
 ---
 
-## Étape 5 — Enregistrer le webhook (UNE SEULE FOIS)
+## Étape 5 — Enregistrement automatique du webhook
 
-Après le premier déploiement, ouvre cette URL dans ton navigateur :
+Le build de production Vercel appelle automatiquement Telegram avec :
 
 ```
-https://TON-APP.vercel.app/setup?token=TON_ADMIN_PASSWORD
+https://api.telegram.org/bot<BOT_TOKEN>/setWebhook
 ```
 
-Remplace :
-- `TON-APP` → ton sous-domaine Vercel (ex: `lucky-jet-bot.vercel.app`)
-- `TON_ADMIN_PASSWORD` → la valeur de `ADMIN_PASSWORD`
+Le webhook enregistré est toujours :
 
-Tu verras :
 ```
-✅ Setup terminé !
-Webhook enregistré : https://TON-APP.vercel.app/webhook
-Updates en attente : 0
-Dernière erreur : aucune
+https://TON-APP.vercel.app/api/webhook
 ```
 
-**Cette étape est obligatoire** — elle dit à Telegram où envoyer les messages.
+Le secret `WEBHOOK_SECRET` est envoyé à Telegram et exigé par l’endpoint.
+Il n’y a donc pas de route `/setup` publique ni de token dans une URL.
 
 ---
 
@@ -114,11 +109,26 @@ Dernière erreur : aucune
 |-----|---------------------|
 | `https://TON-APP.vercel.app/` | Panneau admin (page de login) |
 | `https://TON-APP.vercel.app/api/healthz` | `{"status":"ok"}` |
-| `https://TON-APP.vercel.app/webhook` | `Lucky Jet Bot - Webhook actif` |
+| `https://TON-APP.vercel.app/api/webhook` | `POST uniquement — secret Telegram requis` |
 
 Teste le bot Telegram — envoie `/start`.
 
 ---
+
+## Gestion et vérification du webhook
+
+Les routes de gestion sont POST uniquement et nécessitent simultanément :
+
+```
+Authorization: Bearer WEBHOOK_SECRET
+X-Admin-ID: ADMIN_ID
+```
+
+Routes disponibles :
+
+- `POST /api/webhook/setup` — enregistre puis vérifie le webhook ;
+- `POST /api/webhook/info` — affiche l’URL, l’état, les erreurs et les updates en attente ;
+- `POST /api/webhook/delete` — supprime le webhook.
 
 ## Redéploiements automatiques
 

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/admin-panel run build",
+  "buildCommand": "pnpm --filter @workspace/admin-panel run build && pnpm run register:telegram-webhook",
   "outputDirectory": "artifacts/admin-panel/dist",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
@@ -8,20 +8,21 @@
     "api/index.ts": {
       "runtime": "@vercel/node@5"
     },
-    "api/bot.py": {
+    "api/webhook.py": {
       "runtime": "@vercel/python",
       "maxDuration": 30
     },
-    "api/setup_webhook.py": {
+    "api/webhook_admin.py": {
       "runtime": "@vercel/python",
       "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/webhook",      "destination": "/api/bot" },
-    { "source": "/setup",        "destination": "/api/setup_webhook" },
-    { "source": "/api/(.*)",     "destination": "/api/index" },
-    { "source": "/((?!api/|webhook|setup).*)", "destination": "/index.html" }
+    { "source": "/api/webhook/setup",  "destination": "/api/webhook_admin?action=setup" },
+    { "source": "/api/webhook/info",   "destination": "/api/webhook_admin?action=info" },
+    { "source": "/api/webhook/delete", "destination": "/api/webhook_admin?action=delete" },
+    { "source": "/api/(?!webhook(?:/|$)|webhook_admin(?:/|$))(.*)", "destination": "/api/index" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "env": {
     "NODE_ENV": "production"

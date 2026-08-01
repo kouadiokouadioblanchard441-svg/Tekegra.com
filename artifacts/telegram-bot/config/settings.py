@@ -1,6 +1,5 @@
 import os
 from typing import List
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,9 +10,11 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Telegram
-    TELEGRAM_BOT_TOKEN: str = ""
-    ADMIN_IDS: str = ""
+    # Telegram/Vercel webhook contract
+    BOT_TOKEN: str = ""
+    APP_URL: str = ""
+    WEBHOOK_SECRET: str = ""
+    ADMIN_ID: str = ""
 
     # Bot config
     BOT_PROMO_CODE: str = "JRYVES"
@@ -64,13 +65,16 @@ class Settings(BaseSettings):
 
     @property
     def admin_ids_list(self) -> List[int]:
-        if not self.ADMIN_IDS:
+        if not self.ADMIN_ID:
             return []
-        return [int(x.strip()) for x in self.ADMIN_IDS.split(",") if x.strip()]
+        try:
+            return [int(self.ADMIN_ID.strip())]
+        except ValueError:
+            return []
 
     @property
     def async_database_url(self) -> str:
-        url = self.DATABASE_URL
+        url = self.effective_database_url
         if url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgres://"):

@@ -30,9 +30,11 @@ pnpm --filter @workspace/api-server run dev
 
 | Variable | Description |
 |----------|-------------|
-| `TELEGRAM_BOT_TOKEN` | Token du bot (@BotFather) |
+| `BOT_TOKEN` | Token du bot (@BotFather), stocké comme secret |
+| `APP_URL` | URL HTTPS de production Vercel |
+| `WEBHOOK_SECRET` | Secret Telegram du webhook, stocké comme secret |
 | `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) |
-| `ADMIN_IDS` | IDs Telegram des admins, séparés par virgule |
+| `ADMIN_ID` | ID Telegram de l’administrateur du webhook |
 | `SESSION_SECRET` | Clé JWT pour le panneau admin |
 
 ## Variables optionnelles
