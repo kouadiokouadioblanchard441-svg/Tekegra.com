@@ -56,11 +56,13 @@ git push -u origin main
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| `SUPABASE_DATABASE_URL` | URL Supabase **Session pooler (port 5432)** | `postgresql://postgres.xxx:pass@aws-0-eu.pooler.supabase.com:5432/postgres` |
-| `BOT_TOKEN` | Token du bot (@BotFather) | secret |
-| `ADMIN_PASSWORD` | Mot de passe du panneau admin | `MonMotDePasse2024!` |
-| `SESSION_SECRET` | Clé JWT aléatoire (32+ caractères) | `xK9mP2qL7nR4vW8yZ1aB3cD5eF` |
-| `ADMIN_ID` | ID Telegram admin | `123456789` |
+| `BOT_TOKEN` | Token du bot (@BotFather) — secret | `123456789:AA...` |
+| `APP_URL` | URL HTTPS de production Vercel, sans slash final | `https://mon-projet.vercel.app` |
+| `WEBHOOK_SECRET` | Secret aléatoire Telegram — secret | `une_chaine_aleatoire_longue` |
+| `ADMIN_ID` | ID Telegram de l’administrateur | `123456789` |
+| `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) — secret | `postgresql://...:5432/postgres` |
+| `ADMIN_PASSWORD` | Mot de passe du panneau admin — secret | `un_mot_de_passe_fort` |
+| `SESSION_SECRET` | Clé de session du panneau admin — secret | `une_cle_aleatoire_longue` |
 | `CHANNEL_1_ID` | _(optionnel)_ Ancienne configuration de chaîne | `-1001234567890` |
 | `CHANNEL_1_LINK` | _(optionnel)_ Lien de chaîne | `https://t.me/moncanal` |
 | `CHANNEL_1_NAME` | _(optionnel)_ Nom affiché | `📢 Canal Officiel` |
@@ -74,13 +76,19 @@ git push -u origin main
 
 ---
 
-## Étape 4 — Déployer
+## Étape 4 — Premier déploiement
+
+Si l’URL Vercel n’est pas encore connue, tu peux faire un premier déploiement
+avec `APP_URL` vide. Le build publiera l’application, mais l’enregistrement
+automatique du webhook sera ignoré. Copie ensuite l’URL de production affichée
+par Vercel dans `APP_URL`, puis relance un déploiement **Production**.
 
 Clique **"Deploy"**. Le build prend ~2–3 minutes :
 - ✅ `pnpm install`
 - ✅ Build admin panel React
 - ✅ Compilation API Node.js
 - ✅ Packaging fonction Python (bot webhook)
+- ✅ Enregistrement automatique Telegram après configuration de `APP_URL`
 
 ---
 
