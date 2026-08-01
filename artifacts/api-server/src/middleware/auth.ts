@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || "changeme";
+const secret = process.env.SESSION_SECRET ?? "";
+
+if (!secret) {
+  throw new Error("SESSION_SECRET is required for admin sessions.");
+}
 
 export function signToken(): string {
   return jwt.sign({ role: "admin" }, secret, { expiresIn: "30d" });

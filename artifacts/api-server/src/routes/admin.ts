@@ -5,9 +5,7 @@ import { requireAuth, signToken } from "../middleware/auth.js";
 
 const router = Router();
 
-const ENV_PASSWORD = process.env.ADMIN_PASSWORD || "admin1234";
-
-/** Récupère le hash du mot de passe depuis bot_settings, ou null si absent */
+/** Récupère le hash du mot de passe depuis Supabase. */
 async function getStoredPasswordHash(): Promise<string | null> {
   const { rows } = await pool.query(
     `SELECT value FROM bot_settings WHERE key = 'admin_password_hash' LIMIT 1`
@@ -26,9 +24,12 @@ router.post("/admin/login", async (req, res) => {
 
   try {
     const hash = await getStoredPasswordHash();
-    const valid = hash
-      ? await bcrypt.compare(password, hash)   // mot de passe DB (hashé)
-      : password === ENV_PASSWORD;             // fallback variable d'environnement
+    if (!hash) {
+      res.status(503).json({ error: "Admin password is not configured in Supabase" });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, hash);
 
     if (!valid) {
       res.status(401).json({ error: "Invalid password" });
@@ -59,11 +60,14 @@ router.post("/admin/change-password", requireAuth, async (req, res) => {
   }
 
   try {
-    // Vérifie le mot de passe actuel (DB ou env)
+    // Vérifie le mot de passe actuel dans Supabase.
     const hash = await getStoredPasswordHash();
-    const validCurrent = hash
-      ? await bcrypt.compare(currentPassword, hash)
-      : currentPassword === ENV_PASSWORD;
+    if (!hash) {
+      res.status(503).json({ error: "Admin password is not configured in Supabase" });
+      return;
+    }
+
+    const validCurrent = await bcrypt.compare(currentPassword, hash);
 
     if (!validCurrent) {
       res.status(401).json({ error: "Current password is incorrect" });

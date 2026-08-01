@@ -52,6 +52,10 @@ pnpm --filter @workspace/api-server run dev
 
 Voir `DEPLOY.md` pour le guide complet de déploiement sur Vercel avec webhook Telegram.
 
+Le mot de passe du panneau admin est géré uniquement dans Supabase, dans
+`bot_settings.admin_password_hash`. `ADMIN_PASSWORD` n'est pas utilisé par
+l'application et ne doit pas être configuré sur Vercel.
+
 ## User preferences
 
 - Communication en français

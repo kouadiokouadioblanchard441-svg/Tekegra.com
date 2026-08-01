@@ -6,3 +6,4 @@
 - [Telegram message cleanup](telegram-message-cleanup.md) — track edited and newly sent bot responses under one per-user message lifecycle
 - [Telegram bot performance](telegram-performance.md) — keep callbacks responsive by avoiding redundant Telegram/Supabase calls and artificial delays
 - [Mines display](mines-display.md) — always show “PIÈGES : 3 mines” in the user-facing Mines prediction
+- [Admin password source](admin-password-source.md) — admin login is backed only by the Supabase hash, never by a Vercel password fallback

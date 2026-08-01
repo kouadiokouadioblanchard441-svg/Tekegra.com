@@ -61,7 +61,6 @@ git push -u origin main
 | `WEBHOOK_SECRET` | Secret aléatoire Telegram — secret | `une_chaine_aleatoire_longue` |
 | `ADMIN_ID` | ID Telegram de l’administrateur | `123456789` |
 | `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) — secret | `postgresql://...:5432/postgres` |
-| `ADMIN_PASSWORD` | Mot de passe du panneau admin — secret | `un_mot_de_passe_fort` |
 | `SESSION_SECRET` | Clé de session du panneau admin — secret | `une_cle_aleatoire_longue` |
 | `CHANNEL_1_ID` | _(optionnel)_ Ancienne configuration de chaîne | `-1001234567890` |
 | `CHANNEL_1_LINK` | _(optionnel)_ Lien de chaîne | `https://t.me/moncanal` |
@@ -73,6 +72,10 @@ git push -u origin main
 > Les chaînes obligatoires se configurent désormais dans **Panel admin →
 > Configuration → Canaux requis**. L'ID numérique et le lien sont enregistrés
 > dans la base de données.
+>
+> Le mot de passe administrateur est géré uniquement dans Supabase, dans
+> `bot_settings.admin_password_hash`. Il ne faut pas ajouter `ADMIN_PASSWORD`
+> dans Vercel.
 
 ---
 
@@ -153,7 +156,7 @@ Le webhook reste enregistré — **pas besoin de refaire l'étape 5**.
 | Bot ne répond pas | Webhook non enregistré | Refais l'étape 5 |
 | Erreur DB au démarrage | Mauvaise URL Supabase | Vérifie que c'est le port **5432** (Session pooler) |
 | Panneau admin inaccessible | Build admin panel raté | Vérifie `SUPABASE_DATABASE_URL` dans Vercel env vars |
-| `/setup` répond 401 | Mauvais token | Le `?token=` doit être égal à `ADMIN_PASSWORD` |
+| Connexion admin impossible | Hash absent ou ancien dans Supabase | Vérifie `bot_settings.admin_password_hash` dans Supabase |
 
 ---
 
