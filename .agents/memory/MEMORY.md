@@ -7,3 +7,4 @@
 - [Telegram bot performance](telegram-performance.md) — keep callbacks responsive by avoiding redundant Telegram/Supabase calls and artificial delays
 - [Mines display](mines-display.md) — always show “PIÈGES : 3 mines” in the user-facing Mines prediction
 - [Admin password source](admin-password-source.md) — admin login is backed only by the Supabase hash, never by a Vercel password fallback
+- [Vercel workspace output](vercel-workspace-output.md) — deployment scripts must handle Vercel running from an artifact Root Directory
