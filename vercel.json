@@ -21,8 +21,9 @@
     { "source": "/api/webhook/setup",  "destination": "/api/webhook_admin?action=setup" },
     { "source": "/api/webhook/info",   "destination": "/api/webhook_admin?action=info" },
     { "source": "/api/webhook/delete", "destination": "/api/webhook_admin?action=delete" },
-    { "source": "/api/(?!webhook(?:/|$)|webhook_admin(?:/|$))(.*)", "destination": "/api/index" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/api/healthz",         "destination": "/api/index" },
+    { "source": "/api/admin/:path*",    "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "env": {
     "NODE_ENV": "production"
