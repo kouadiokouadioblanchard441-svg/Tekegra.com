@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/admin-panel run build && if [ -d artifacts/admin-panel/dist ]; then rm -rf dist && cp -R artifacts/admin-panel/dist dist; fi && test -f dist/index.html && pnpm -w run register:telegram-webhook",
+  "buildCommand": "pnpm --filter @workspace/admin-panel run build && pnpm -w exec node scripts/prepare-vercel-output.mjs && pnpm -w run register:telegram-webhook",
   "outputDirectory": "dist",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
