@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/admin-panel run build && pnpm -w run register:telegram-webhook",
-  "outputDirectory": "artifacts/admin-panel/dist",
+  "buildCommand": "pnpm --filter @workspace/admin-panel run build && rm -rf dist && cp -R artifacts/admin-panel/dist dist && pnpm -w run register:telegram-webhook",
+  "outputDirectory": "dist",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
   "functions": {
