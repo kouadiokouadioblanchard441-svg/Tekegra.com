@@ -1,0 +1,23 @@
+{
+  "lang_name": "Español",
+  "welcome": "🚀 ¡Bienvenido {name} a Lucky Jet AI Bot!",
+  "menu_title": "🎯 Menú principal — Elige una opción:",
+  "luckyjet": "🎯 Lucky Jet",
+  "mines": "💣 Mines",
+  "profile": "👤 Mi perfil",
+  "premium": "⭐ Premium",
+  "guide": "📚 Guía",
+  "language": "🌍 Idioma",
+  "support": "☎ Soporte",
+  "signal": "🚀 Señal",
+  "signal_premium": "⭐ Señal Premium",
+  "analyse": "📊 Análisis IA",
+  "history": "📈 Historial",
+  "back": "⬅ Volver",
+  "analysing": "⏳ Análisis IA en curso...",
+  "countdown": "🔄 Próxima señal disponible en *{seconds}* segundos.",
+  "no_history": "Sin señales en el historial",
+  "promo_code": "Código promo",
+  "create_account": "🎰 Crear cuenta 1WIN ↗",
+  "select_language": "🌍 Por favor seleccione su idioma:"
+}

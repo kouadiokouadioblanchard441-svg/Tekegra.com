@@ -1,45 +1,48 @@
-# [Project name]
+# Lucky Jet AI Bot
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Bot Telegram de signaux de jeu (Lucky Jet / Mines / Rocket Queen) avec panneau d'administration React et API Node.js.
 
-## Run & Operate
+## Architecture
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+| Composant | Stack | Emplacement |
+|-----------|-------|-------------|
+| Panneau Admin | React / Vite / TypeScript | `artifacts/admin-panel/` |
+| API Server | Node.js / Express / TypeScript | `artifacts/api-server/` |
+| Bot Telegram | Python 3 / aiogram 3 / SQLAlchemy | `artifacts/telegram-bot/` |
+| Base de données | Supabase PostgreSQL | variable `SUPABASE_DATABASE_URL` |
 
-## Stack
+## Démarrage
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+Les workflows gérés démarrent automatiquement :
 
-## Where things live
+- **`artifacts/admin-panel: web`** — Panneau admin React sur `/admin-panel/`
+- **`artifacts/api-server: API Server`** — API Express sur `/api`
+- **`Telegram Bot`** — Bot Python (démarrer manuellement après avoir configuré les secrets)
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+## Variables d'environnement requises (Replit Secrets)
 
-## Architecture decisions
+| Variable | Description |
+|----------|-------------|
+| `BOT_TOKEN` | Token du bot (@BotFather) |
+| `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) |
+| `SESSION_SECRET` | Clé JWT pour le panneau admin |
+| `WEBHOOK_SECRET` | Secret Telegram du webhook |
+| `APP_URL` | URL HTTPS de production |
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+## Variables d'environnement optionnelles (userenv)
 
-## Product
+Configurées dans `.replit` sous `[userenv.shared]` :
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+| Variable | Valeur par défaut |
+|----------|-------------------|
+| `BOT_NAME` | Lucky Jet AI Bot |
+| `BOT_PROMO_CODE` | JRYVES |
+| `FREE_SIGNALS_PER_DAY` | 6 |
+| `PREMIUM_SIGNALS_PER_DAY` | 9 |
+| `ADMIN_ID` | ID Telegram de l'administrateur |
+| `BOT_AFFILIATE_LINK` | Lien d'affiliation 1WIN |
+| `CHANNEL_1_ID` / `CHANNEL_1_LINK` / `CHANNEL_1_NAME` | Chaîne obligatoire 1 |
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Communication en français
