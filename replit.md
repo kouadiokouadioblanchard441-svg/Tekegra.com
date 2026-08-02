@@ -1,61 +1,45 @@
-# Lucky Jet AI Bot
+# [Project name]
 
-Un bot Telegram de signaux de jeu (Lucky Jet / Mines / Rocket Queen) avec panneau d'administration React et API Node.js.
+_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
 
-## Architecture
+## Run & Operate
 
-| Composant | Stack | Emplacement |
-|-----------|-------|-------------|
-| Bot Telegram | Python 3 / aiogram 3 / SQLAlchemy | `artifacts/telegram-bot/` |
-| Panneau Admin | React / Vite / TypeScript | `artifacts/admin-panel/` |
-| API Server | Node.js / Express / TypeScript | `artifacts/api-server/` |
-| Base de données | Supabase PostgreSQL (asyncpg) | variable `SUPABASE_DATABASE_URL` |
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm run typecheck` — full typecheck across all packages
+- `pnpm run build` — typecheck + build all packages
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- Required env: `DATABASE_URL` — Postgres connection string
 
-## Lancer le projet
+## Stack
 
-### Bot Telegram (workflow principal)
-Le workflow **"Telegram Bot"** démarre automatiquement :
-```
-cd artifacts/telegram-bot && pip install -r requirements.txt && python main.py
-```
+- pnpm workspaces, Node.js 24, TypeScript 5.9
+- API: Express 5
+- DB: PostgreSQL + Drizzle ORM
+- Validation: Zod (`zod/v4`), `drizzle-zod`
+- API codegen: Orval (from OpenAPI spec)
+- Build: esbuild (CJS bundle)
 
-### Admin Panel & API
-```bash
-pnpm install          # à la racine du projet
-pnpm --filter @workspace/admin-panel run dev
-pnpm --filter @workspace/api-server run dev
-```
+## Where things live
 
-## Variables d'environnement requises (Replit Secrets)
+_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
 
-| Variable | Description |
-|----------|-------------|
-| `BOT_TOKEN` | Token du bot (@BotFather), stocké comme secret |
-| `APP_URL` | URL HTTPS de production Vercel |
-| `WEBHOOK_SECRET` | Secret Telegram du webhook, stocké comme secret |
-| `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) |
-| `ADMIN_ID` | ID Telegram de l’administrateur du webhook |
-| `SESSION_SECRET` | Clé JWT pour le panneau admin |
+## Architecture decisions
 
-## Variables optionnelles
+_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
 
-| Variable | Défaut | Description |
-|----------|--------|-------------|
-| `BOT_PROMO_CODE` | `JRYVES` | Code promo 1WIN |
-| `BOT_AFFILIATE_LINK` | `https://1win.com` | Lien d'affiliation |
-| `FREE_SIGNALS_PER_DAY` | `6` | Signaux gratuits/jour |
-| `PREMIUM_SIGNALS_PER_DAY` | `9` | Signaux premium/jour |
-| `CHANNEL_1_ID` / `CHANNEL_1_LINK` / `CHANNEL_1_NAME` | — | Chaîne obligatoire 1 |
-| `CHANNEL_2_ID` / `CHANNEL_2_LINK` / `CHANNEL_2_NAME` | — | Chaîne obligatoire 2 |
+## Product
 
-## Déploiement Vercel
-
-Voir `DEPLOY.md` pour le guide complet de déploiement sur Vercel avec webhook Telegram.
-
-Le mot de passe du panneau admin est géré uniquement dans Supabase, dans
-`bot_settings.admin_password_hash`. `ADMIN_PASSWORD` n'est pas utilisé par
-l'application et ne doit pas être configuré sur Vercel.
+_Describe the high-level user-facing capabilities of this app once they exist._
 
 ## User preferences
 
-- Communication en français
+_Populate as you build — explicit user instructions worth remembering across sessions._
+
+## Gotchas
+
+_Populate as you build — sharp edges, "always run X before Y" rules._
+
+## Pointers
+
+- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
