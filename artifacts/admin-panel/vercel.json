@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @workspace/admin-panel run build && pnpm --filter @workspace/api-server exec node build-vercel-app.mjs && node scripts/prepare-admin-panel-deploy.mjs && node scripts/register-telegram-webhook.mjs",
+  "outputDirectory": "dist",
+  "framework": null,
+  "functions": {
+    "api/index.mjs": {
+      "runtime": "@vercel/node@5"
+    },
+    "api/webhook.py": {
+      "runtime": "@vercel/python",
+      "maxDuration": 30
+    },
+    "api/webhook_admin.py": {
+      "runtime": "@vercel/python",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/webhook/setup",  "destination": "/api/webhook_admin?action=setup" },
+    { "source": "/api/webhook/info",   "destination": "/api/webhook_admin?action=info" },
+    { "source": "/api/webhook/delete", "destination": "/api/webhook_admin?action=delete" },
+    { "source": "/api/healthz",        "destination": "/api/index" },
+    { "source": "/api/admin/:path*",   "destination": "/api/index" },
+    { "source": "/(.*)",               "destination": "/index.html" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
