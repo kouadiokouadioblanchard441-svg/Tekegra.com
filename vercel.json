@@ -6,14 +6,14 @@
   "framework": null,
   "functions": {
     "api/index.ts": {
-      "runtime": "@vercel/node@5"
+      "runtime": "@vercel/node@3.2.6"
     },
     "api/webhook.py": {
-      "runtime": "@vercel/python",
+      "runtime": "@vercel/python@4.3.0",
       "maxDuration": 30
     },
     "api/webhook_admin.py": {
-      "runtime": "@vercel/python",
+      "runtime": "@vercel/python@4.3.0",
       "maxDuration": 30
     }
   },
