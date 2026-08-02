@@ -5,15 +5,10 @@
   "outputDirectory": "dist",
   "framework": null,
   "functions": {
-    "api/index.mjs": {
-      "runtime": "@vercel/node@3.2.6"
-    },
     "api/webhook.py": {
-      "runtime": "@vercel/python@4.3.0",
       "maxDuration": 30
     },
     "api/webhook_admin.py": {
-      "runtime": "@vercel/python@4.3.0",
       "maxDuration": 30
     }
   },
