@@ -15,6 +15,10 @@ out-tsc
 !/plesk-deployment/client-dist/**
 !/plesk-deployment/dist/
 !/plesk-deployment/dist/**
+!/dist/
+!/dist/**
+!/client-dist/
+!/client-dist/**
 !/plesk-deployment/server/
 
 # dependencies

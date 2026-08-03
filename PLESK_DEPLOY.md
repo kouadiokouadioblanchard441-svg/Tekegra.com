@@ -1,19 +1,16 @@
 # Déploiement GitHub → Plesk
 
 Le dépôt contient le workspace Replit et une application autonome pour Plesk.
-Dans Plesk, il faut utiliser **`plesk-deployment/` comme Application root**.
-Ne sélectionne pas la racine du dépôt : son `package.json` est le workspace
-PNPM Replit et n'est pas le package de production Plesk.
+Le build synchronise les artefacts de production à la racine du dépôt afin que
+Plesk puisse utiliser `/voltatrucks.online` comme **Application root**.
 
 ## Préparation avant le push GitHub
 
 Depuis la racine du dépôt :
 
 ```bash
-cd plesk-deployment
-npm ci
-npm run typecheck
 npm run build
+cd plesk-deployment
 npm run check:bot
 npm run deploy:check
 ```
@@ -21,8 +18,11 @@ npm run deploy:check
 Les commandes doivent toutes réussir. Le build génère et met à jour les
 artefacts versionnés :
 
-- `plesk-deployment/client-dist/`
-- `plesk-deployment/dist/index.cjs`
+- `client-dist/`
+- `dist/index.cjs`
+
+Le même build peut être lancé directement dans `plesk-deployment/` avec
+`npm run build`.
 
 Ensuite, depuis la racine du dépôt :
 
@@ -46,7 +46,7 @@ Dans **Websites & Domains → Node.js** :
 
 | Paramètre | Valeur |
 |---|---|
-| Application root | `plesk-deployment` |
+| Application root | `/voltatrucks.online` |
 | Application startup file | `dist/index.cjs` |
 | Node.js version | 20 ou supérieure |
 | Application mode | Production |
@@ -57,9 +57,9 @@ d'environnement Plesk. Le bot Telegram utilise les variables de
 Les variables du bot doivent être présentes dans l'environnement du processus
 Python lancé par Supervisor/systemd ou le gestionnaire de processus Plesk.
 
-Active l'installation NPM si Plesk propose cette option. Elle doit s'exécuter
-dans `plesk-deployment/`, là où se trouvent `package.json` et
-`package-lock.json`.
+Si Plesk propose l'installation NPM, elle peut être désactivée : `dist/index.cjs`
+est un bundle autonome. Le package de build se trouve dans
+`plesk-deployment/`.
 
 ## À chaque mise à jour
 
@@ -100,13 +100,13 @@ npm run deploy:check
 Le chemin complet du fichier de démarrage sera donc :
 
 ```text
-/voltatrucks.online/plesk-deployment/dist/index.cjs
+/voltatrucks.online/dist/index.cjs
 ```
 
 Si Plesk affiche `/voltatrucks.online/app.js`, l'**Application root** ou le
 champ **Application startup file** est configuré sur une ancienne valeur.
-Il faut régler la racine sur `/voltatrucks.online/plesk-deployment` et le
-startup file sur `dist/index.cjs`.
+Il faut régler la racine sur `/voltatrucks.online` et le startup file sur
+`dist/index.cjs`.
 
 ```bash
 cd plesk-deployment/telegram-bot

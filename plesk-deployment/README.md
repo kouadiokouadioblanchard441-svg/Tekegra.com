@@ -25,7 +25,7 @@ aiogram et SQLAlchemy asynchrones.
 ## Installation du serveur Node
 
 1. Dans Plesk, créer une application Node.js pour le domaine.
-2. Choisir le dossier `plesk-deployment` comme **Application root**.
+2. Choisir `/voltatrucks.online` comme **Application root**.
 3. Choisir `dist/index.cjs` comme **Application startup file**.
 4. Définir les variables d’environnement de `.env.example` dans Plesk
    (ne jamais téléverser un fichier `.env` contenant des secrets).
@@ -40,12 +40,12 @@ npm run deploy:check
 Les bundles de production `client-dist/` et `dist/index.cjs` sont versionnés dans
 Git pour que **Pull + Deploy Now**, puis **Restart App**, fonctionne sans
 dépendre d’un hook de build Plesk. Si le code source a été modifié localement,
-reconstruire avant le push :
+reconstruire avant le push depuis la racine du dépôt :
 
 ```bash
-npm ci
-npm run typecheck
+cd ..
 npm run build
+cd plesk-deployment
 npm run check:bot
 npm run deploy:check
 ```
@@ -135,7 +135,8 @@ Aucune archive ZIP n’est nécessaire. Le build produit les dossiers
 `client-dist/` et `dist/index.cjs`, qui sont versionnés dans GitHub. Après le
 push, Plesk utilise **Pull → Deploy Now → Restart App**.
 
-Le contrôle complet du package, y compris les imports Python du bot, est :
+Depuis la racine du dépôt, le contrôle complet du package, y compris les
+imports Python du bot, est :
 
 ```bash
 npm run typecheck
