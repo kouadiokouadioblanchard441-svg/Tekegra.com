@@ -5,5 +5,5 @@ generated = []
 id = "Lt1PPap9MCld02XmCC9fY"
 uri = "file://dist/lucky-jet-ai-bot-plesk.zip"
 type = "unspecified"
-title = "Lucky Jet AI Bot — package Plesk final"
-description = "Archive finale sans Vercel : Node.js/API, panneau admin compilé, bot Telegram séparé et exemples d'environnement complets pour Plesk."
+title = "Package de déploiement Plesk"
+description = "Archive validée pour Plesk : serveur Node compilé, panneau React compilé, bot Telegram Python, package-lock et fichiers de configuration exemple sans secrets."

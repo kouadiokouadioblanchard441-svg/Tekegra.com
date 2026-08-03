@@ -90,7 +90,16 @@ cd plesk-deployment
 npm run deploy:check
 ```
 
-Le bot reste un processus séparé :
+Le chemin complet du fichier de démarrage sera donc :
+
+```text
+/voltatrucks.online/plesk-deployment/server/dist/index.js
+```
+
+Si Plesk affiche `/voltatrucks.online/app.js`, l'**Application root** ou le
+champ **Application startup file** est configuré sur une ancienne valeur.
+Il faut régler la racine sur `/voltatrucks.online/plesk-deployment` et le
+startup file sur `server/dist/index.js`.
 
 ```bash
 cd plesk-deployment/telegram-bot
