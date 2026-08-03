@@ -11,7 +11,16 @@ def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup
 
     buttons = [
         [InlineKeyboardButton(text=free_label, callback_data="lj:get_signal")],
-        [InlineKeyboardButton(text="⭐ Signal Premium", callback_data="lj:signal_premium:grosse")],
+        [
+            InlineKeyboardButton(
+                text="⭐ Petite Cote Premium",
+                callback_data="lj:signal_premium:petite",
+            ),
+            InlineKeyboardButton(
+                text="⭐ Grosse Cote Premium",
+                callback_data="lj:signal_premium:grosse",
+            ),
+        ],
         [InlineKeyboardButton(text="↩ Retour", callback_data="menu:luckyjet")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
