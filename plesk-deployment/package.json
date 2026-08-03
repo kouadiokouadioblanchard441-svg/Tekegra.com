@@ -9,6 +9,7 @@
     "build:client": "vite build",
     "build:server": "node server/build.mjs",
     "migrate": "npm run build:server && node server/dist/migrate.js",
+    "deploy:check": "node scripts/deploy-check.mjs",
     "start": "NODE_ENV=production node server/dist/index.js",
     "start:bot": "cd telegram-bot && python3 main.py",
     "typecheck": "tsc -p tsconfig.json --noEmit"

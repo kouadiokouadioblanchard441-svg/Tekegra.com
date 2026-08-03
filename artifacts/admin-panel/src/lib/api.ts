@@ -10,12 +10,12 @@ import {
   setAuthTokenGetter,
 } from "@workspace/api-client-react";
 
-// Support external API URL for Vercel deployment
+// Keep the API URL configurable for local development and same-origin hosting.
 const BASE_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}`
   : "";
 
-// Set base URL for the generated client (only needed for cross-origin, e.g. Vercel)
+// Set the base URL only when the API is hosted on a separate origin.
 if (BASE_URL) {
   setBaseUrl(BASE_URL);
 }

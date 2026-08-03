@@ -12,8 +12,6 @@ class Settings(BaseSettings):
 
     # Telegram polling configuration
     BOT_TOKEN: str = ""
-    APP_URL: str = ""
-    WEBHOOK_SECRET: str = ""
     ADMIN_ID: str = ""
 
     # Bot config

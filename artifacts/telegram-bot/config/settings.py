@@ -10,10 +10,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Telegram/Vercel webhook contract
+    # Telegram polling configuration
     BOT_TOKEN: str = ""
-    APP_URL: str = ""
-    WEBHOOK_SECRET: str = ""
     ADMIN_ID: str = ""
 
     # Bot config

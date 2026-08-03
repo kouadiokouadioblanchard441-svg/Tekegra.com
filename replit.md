@@ -26,8 +26,6 @@ Les workflows gérés démarrent automatiquement :
 | `BOT_TOKEN` | Token du bot (@BotFather) |
 | `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) |
 | `SESSION_SECRET` | Clé JWT pour le panneau admin |
-| `WEBHOOK_SECRET` | Secret Telegram du webhook |
-| `APP_URL` | URL HTTPS de production |
 
 ## Variables d'environnement optionnelles (userenv)
 

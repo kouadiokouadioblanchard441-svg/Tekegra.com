@@ -8,8 +8,22 @@ out-tsc
 .expo
 .expo-shared
 
+# The standalone Plesk package commits its production bundles so that
+# GitHub -> Plesk "Pull + Deploy Now" can restart without a separate build hook.
+!/plesk-deployment/
+!/plesk-deployment/client-dist/
+!/plesk-deployment/client-dist/**
+!/plesk-deployment/server/
+!/plesk-deployment/server/dist/
+!/plesk-deployment/server/dist/**
+
 # dependencies
 node_modules
+
+# Environment files and secrets
+**/.env
+**/.env.*
+!**/.env.example
 
 # IDEs and editors
 /.idea

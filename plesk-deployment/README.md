@@ -29,20 +29,30 @@ aiogram et SQLAlchemy asynchrones.
 3. Choisir `server/dist/index.js` comme **Application startup file**.
 4. Définir les variables d’environnement de `.env.example` dans Plesk
    (ne jamais téléverser un fichier `.env` contenant des secrets).
-5. Depuis le dossier de l’application :
+5. Dans Plesk, activer **NPM install** si l’option est proposée.
+6. Depuis le dossier de l’application, vérifier les artefacts :
 
 ```bash
-npm install
-npm run build
-npm run start
+npm ci --omit=dev
+npm run deploy:check
 ```
 
-Pour une installation sans outils de développement :
+Les bundles de production `client-dist/` et `server/dist/` sont versionnés dans
+Git pour que **Pull + Deploy Now**, puis **Restart App**, fonctionne sans
+dépendre d’un hook de build Plesk. Si le code source a été modifié localement,
+reconstruire avant le push :
 
 ```bash
+npm ci
+npm run typecheck
 npm run build
-npm install --omit=dev
-npm run start
+npm run deploy:check
+```
+
+Plesk démarre ensuite :
+
+```bash
+npm start
 ```
 
 Le démarrage exécute les migrations PostgreSQL idempotentes avant d’ouvrir le
@@ -98,7 +108,8 @@ Plesk pour le bot). Ne lancez pas le bot dans le même processus que Node.
 - [ ] `DOMAIN_URL` et `CORS_ORIGINS` limités au domaine public exact.
 - [ ] `BOT_TOKEN` et `ADMIN_ID` renseignés uniquement dans les variables
       privées Plesk.
-- [ ] `npm install` puis `npm run build` terminés sans erreur.
+- [ ] `npm ci` terminé sans erreur.
+- [ ] `npm run deploy:check` confirme les bundles présents.
 - [ ] Startup file réglé sur `server/dist/index.js`.
 - [ ] Le port de l’application est celui fourni par Plesk via `PORT`.
 - [ ] `GET /api/healthz` retourne `database: ok`.
@@ -108,8 +119,9 @@ Plesk pour le bot). Ne lancez pas le bot dans le même processus que Node.
 - [ ] Le bot démarre comme processus séparé et reçoit les mises à jour Telegram.
 - [ ] Les logs Node et bot sont consultables dans Plesk.
 - [ ] Les sauvegardes PostgreSQL et la rotation des logs sont activées.
-- [ ] Les fichiers `.env`, `node_modules/`, `server/dist/` et `client-dist/`
-      ne sont pas publiés dans Git avec des secrets.
+- [ ] Les fichiers `.env` et `node_modules/` ne sont pas publiés dans Git.
+- [ ] Les bundles `server/dist/` et `client-dist/` sont présents dans Git
+      pour le déploiement Pull + Deploy Now.
 
 ## Créer l’archive de distribution
 

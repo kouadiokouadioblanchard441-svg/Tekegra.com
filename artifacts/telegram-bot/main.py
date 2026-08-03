@@ -1,7 +1,7 @@
-"""Replit entrypoint — runs the bot in long-polling mode.
+"""Long-polling entrypoint for the Telegram bot.
 
-On Replit the process stays alive, so polling is the natural transport.
-The Vercel serverless webhook path (api/webhook.py) is not used here.
+The bot runs as a persistent process under the hosting provider's process
+manager. Long polling avoids the need for a public webhook endpoint.
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ from database.db import init_db
 
 async def main() -> None:
     if not settings.BOT_TOKEN:
-        logger.error("BOT_TOKEN is not set. Configure it as a Replit secret.")
+        logger.error("BOT_TOKEN is not set. Configure it in the process environment.")
         sys.exit(1)
 
     logger.info("Initialising database…")
