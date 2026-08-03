@@ -306,7 +306,28 @@ async def cb_premium_get_signal(call: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "lj:analyse")
-async def cb_analyse(call: CallbackQuery):
+async def cb_analyse(call: CallbackQuery, session: AsyncSession):
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+    if not db_user.is_premium and db_user.free_signals_used_total >= settings.FREE_SIGNALS_TOTAL:
+        text = (
+            f"⛔ *Quota gratuit épuisé*\n\n{SEP}\n"
+            f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
+            f"│◉ Passe Premium pour continuer 🚀\n"
+            f"{SEP}\n\n⭐ Abonne-toi pour des signaux *illimités* !"
+        )
+        await call.message.edit_text(text, parse_mode="Markdown",
+                                     reply_markup=premium_locked_keyboard())
+        await call.answer("⛔ Quota gratuit épuisé")
+        return
+
     await call.message.edit_text("⏳ *Chargement Lucky Jet...*", parse_mode="Markdown")
     await asyncio.sleep(0.15)
 
