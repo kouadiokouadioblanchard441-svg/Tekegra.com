@@ -1,0 +1,19 @@
+[Unit]
+Description=Lucky Jet Telegram Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=telegrambot
+Group=telegrambot
+WorkingDirectory=/opt/lucky-jet-ai-bot/plesk-deployment/telegram-bot
+EnvironmentFile=/opt/lucky-jet-ai-bot/plesk-deployment/telegram-bot/.env
+ExecStart=/opt/lucky-jet-ai-bot/plesk-deployment/telegram-bot/start.sh
+Restart=always
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

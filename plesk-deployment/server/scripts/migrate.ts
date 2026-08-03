@@ -1,5 +1,6 @@
 import { pool } from "../db.js";
 import { logger } from "../lib/logger.js";
+import bcrypt from "bcryptjs";
 
 const statements = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -73,5 +74,32 @@ export async function runMigrations(): Promise<void> {
   for (const statement of statements) {
     await pool.query(statement);
   }
+
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminPassword && adminPassword.length >= 6) {
+    const { rows } = await pool.query(
+      `SELECT value FROM bot_settings WHERE key = 'admin_password_hash' LIMIT 1`,
+    );
+    const shouldReset = process.env.ADMIN_PASSWORD_RESET === "true";
+    if (!rows[0]?.value || shouldReset) {
+      const passwordHash = await bcrypt.hash(adminPassword, 12);
+      await pool.query(
+        `INSERT INTO bot_settings (key, value)
+         VALUES ('admin_password_hash', $1)
+         ON CONFLICT (key) DO UPDATE
+         SET value = EXCLUDED.value, updated_at = NOW()`,
+        [passwordHash],
+      );
+      logger.info(
+        { reset: shouldReset },
+        "Admin password hash initialized from ADMIN_PASSWORD",
+      );
+    }
+  } else if (adminPassword) {
+    logger.warn(
+      "ADMIN_PASSWORD is set but must contain at least 6 characters; admin hash was not changed",
+    );
+  }
+
   logger.info({ statements: statements.length }, "Database migrations complete");
 }

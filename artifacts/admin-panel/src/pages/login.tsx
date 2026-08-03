@@ -25,8 +25,8 @@ export default function Login() {
           toast.success("Login successful")
           setLocation("/")
         },
-        onError: () => {
-          toast.error("Invalid password")
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Admin login failed")
         }
       }
     )
