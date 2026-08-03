@@ -20,12 +20,16 @@ write_shell_status() {
   temporary="${STATUS_FILE}.$$"
   if [[ -n "$code" ]]; then
     printf '{"status":"%s","pid":%s,"stage":"%s","exitCode":%s,"at":"%s"}\n' \
-      "$status" "$$" "$stage" "$code" "$timestamp" > "$temporary"
+      "$status" "$$" "$stage" "$code" "$timestamp" > "$temporary" &&
+      mv -f "$temporary" "$STATUS_FILE"
   else
     printf '{"status":"%s","pid":%s,"stage":"%s","at":"%s"}\n' \
-      "$status" "$$" "$stage" "$timestamp" > "$temporary"
+      "$status" "$$" "$stage" "$timestamp" > "$temporary" &&
+      mv -f "$temporary" "$STATUS_FILE"
   fi
-  mv -f "$temporary" "$STATUS_FILE"
+  # Diagnostics must never prevent the bot itself from starting.
+  rm -f "$temporary" 2>/dev/null || true
+  return 0
 }
 
 on_start_failure() {
@@ -35,10 +39,11 @@ on_start_failure() {
 }
 
 trap on_start_failure ERR
-write_shell_status "starting" "$CURRENT_STAGE"
+write_shell_status "starting" "$CURRENT_STAGE" || true
 
 if [[ ! -x "$VENV/bin/python" ]]; then
   CURRENT_STAGE="create_venv"
+  echo "Telegram bot startup: creating Python virtualenv at $VENV" >&2
   "$PYTHON" -m venv "$VENV"
 fi
 
@@ -46,8 +51,10 @@ fi
 # a virtualenv ("user site-packages are not visible in this virtualenv"), so
 # explicitly keep both pip operations inside the bot virtualenv.
 CURRENT_STAGE="upgrade_pip"
+echo "Telegram bot startup: upgrading pip" >&2
 "$VENV/bin/python" -m pip install --no-user --quiet --upgrade pip
 CURRENT_STAGE="install_requirements"
+echo "Telegram bot startup: installing Python requirements" >&2
 "$VENV/bin/python" -m pip install --no-user --quiet -r "$BOT_ROOT/requirements.txt"
 
 # Validate the configuration before starting polling. The Python systemd
@@ -56,6 +63,7 @@ CURRENT_STAGE="install_requirements"
 # EnvironmentFile or this package's private .env file.
 # Keep the values themselves out of logs; only report missing variable names.
 CURRENT_STAGE="validate_configuration"
+echo "Telegram bot startup: validating configuration" >&2
 "$VENV/bin/python" - <<'PY'
 from config import settings
 
@@ -75,5 +83,6 @@ if missing:
 PY
 
 CURRENT_STAGE="launch_python"
-write_shell_status "launching" "$CURRENT_STAGE"
+write_shell_status "launching" "$CURRENT_STAGE" || true
+echo "Telegram bot startup: launching main.py" >&2
 exec "$VENV/bin/python" "$BOT_ROOT/main.py"

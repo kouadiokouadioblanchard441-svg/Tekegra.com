@@ -41603,7 +41603,10 @@ async function start() {
     setTelegramBotRuntime({
       state: "starting",
       script: botStartScript,
-      statusFile: import_node_path2.default.join(import_node_path2.default.dirname(botStartScript), ".bot-status.json"),
+      statusFile: import_node_path2.default.join(
+        "/tmp",
+        `voltatrucks-telegram-bot-${process.pid}.json`
+      ),
       lastError: void 0,
       botStatus: void 0
     });
@@ -41612,8 +41615,8 @@ async function start() {
       env: {
         ...process.env,
         TELEGRAM_BOT_STATUS_FILE: import_node_path2.default.join(
-          import_node_path2.default.dirname(botStartScript),
-          ".bot-status.json"
+          "/tmp",
+          `voltatrucks-telegram-bot-${process.pid}.json`
         )
       },
       stdio: "inherit"

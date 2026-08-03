@@ -71,7 +71,10 @@ async function start(): Promise<void> {
     setTelegramBotRuntime({
       state: "starting",
       script: botStartScript,
-      statusFile: path.join(path.dirname(botStartScript), ".bot-status.json"),
+      statusFile: path.join(
+        "/tmp",
+        `voltatrucks-telegram-bot-${process.pid}.json`,
+      ),
       lastError: undefined,
       botStatus: undefined,
     });
@@ -81,8 +84,8 @@ async function start(): Promise<void> {
       env: {
         ...process.env,
         TELEGRAM_BOT_STATUS_FILE: path.join(
-          path.dirname(botStartScript),
-          ".bot-status.json",
+          "/tmp",
+          `voltatrucks-telegram-bot-${process.pid}.json`,
         ),
       },
       stdio: "inherit",
