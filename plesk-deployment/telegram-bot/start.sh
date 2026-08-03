@@ -47,16 +47,35 @@ if [[ ! -x "$VENV/bin/python" ]]; then
   "$PYTHON" -m venv "$VENV"
 fi
 
-# Do not self-upgrade pip on every Plesk restart. Some Plesk/Passenger
-# environments block pip's self-update or return exit code 2 before Python
-# starts. The virtualenv already contains a usable pip; only install the
-# application's pinned dependencies.
-CURRENT_STAGE="install_requirements"
-echo "Telegram bot startup: installing Python requirements" >&2
-"$VENV/bin/python" -m pip install \
-  --no-user \
-  --disable-pip-version-check \
-  -r "$BOT_ROOT/requirements.txt"
+# Do not run pip on every Plesk restart. Passenger environments may block
+# network/package-manager operations even though the already-installed
+# virtualenv is healthy. Install only when an application import is missing.
+CURRENT_STAGE="check_dependencies"
+if ! "$VENV/bin/python" - <<'PY'
+import aiofiles
+import aiohttp
+import aiogram
+import asyncpg
+import babel
+import fastapi
+import httpx
+import loguru
+import PIL
+import pydantic_settings
+import sqlalchemy
+import starlette
+import uvicorn
+PY
+then
+  CURRENT_STAGE="install_requirements"
+  echo "Telegram bot startup: installing Python requirements" >&2
+  "$VENV/bin/python" -m pip install \
+    --no-user \
+    --disable-pip-version-check \
+    --no-input \
+    --no-cache-dir \
+    -r "$BOT_ROOT/requirements.txt"
+fi
 
 # Validate the configuration before starting polling. The Python systemd
 # service does not inherit the environment of the separate Plesk Node.js app,
