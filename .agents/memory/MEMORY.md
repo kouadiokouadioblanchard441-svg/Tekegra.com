@@ -1,0 +1,1 @@
+- [Plesk packaging](plesk-packaging.md) — keep the Node admin/API process and Python Telegram bot as separate services sharing PostgreSQL.

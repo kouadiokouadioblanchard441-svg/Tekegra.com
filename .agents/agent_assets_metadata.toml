@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Lt1PPap9MCld02XmCC9fY"
+uri = "file://dist/lucky-jet-ai-bot-plesk.zip"
+type = "unspecified"
+title = "Lucky Jet AI Bot — package Plesk"
+description = "Archive autonome pour Plesk Linux : panneau admin React compilé, API Node.js/Express, migrations PostgreSQL, configuration .env.example, bot Telegram séparé et checklist d'installation."
