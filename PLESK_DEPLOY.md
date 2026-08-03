@@ -52,10 +52,8 @@ Dans **Websites & Domains → Node.js** :
 | Application mode | Production |
 
 Ajoute les variables de `plesk-deployment/.env.example` dans les variables
-d'environnement Plesk. Le bot Telegram utilise les variables de
-`plesk-deployment/telegram-bot/.env.example` dans son propre processus.
-Les variables du bot doivent être présentes dans l'environnement du processus
-Python lancé par Supervisor/systemd ou le gestionnaire de processus Plesk.
+d'environnement de l'application Node Plesk. Le bot Python est démarré
+automatiquement par `dist/index.cjs` et hérite du même environnement.
 
 Si Plesk propose l'installation NPM, elle peut être désactivée : `dist/index.cjs`
 est un bundle autonome. Le package de build se trouve dans
@@ -127,17 +125,17 @@ Le contrôle de build équivalent depuis `plesk-deployment/` est :
 npm run check:bot
 ```
 
-Le bot Telegram n'est pas lancé par Replit et n'est pas lancé par le processus
-Node.js. Sur le serveur Plesk, créer un **service Python séparé** avec
-Supervisor, systemd ou le gestionnaire de processus disponible.
+Le bot Telegram n'est pas lancé par Replit. Le démarrage Plesk de
+`dist/index.cjs` lance automatiquement le bot Python comme processus séparé,
+avec le même environnement que l'application Node.
 
-Commande de démarrage du service Python :
+La commande manuelle de diagnostic est :
 
 ```bash
 bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
-Dans les variables d'environnement de ce service Python Plesk, ajouter :
+Dans les variables d'environnement de l'application Node Plesk, ajouter :
 
 ```text
 BOT_TOKEN=<token fourni par BotFather>
@@ -146,13 +144,22 @@ SUPABASE_DATABASE_URL=<URL PostgreSQL Supabase>
 
 `DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Le script accepte aussi
 un fichier local
-`/voltatrucks.online/plesk-deployment/telegram-bot/.env` (non versionné).
+`/voltatrucks.online/plesk-deployment/telegram-bot/.env` (non versionné), mais
+ce fichier n'est pas nécessaire lorsque les variables sont configurées dans
+Plesk.
 
-Ne configure pas le bot comme une deuxième application Node.js et ne lance pas
-le bot depuis `dist/index.cjs`. Le bot doit avoir son propre processus Python
-et son propre environnement.
+Le bot a son propre processus Python, mais il est automatiquement démarré par
+`dist/index.cjs`. Ne configure pas un deuxième service Supervisor/systemd pour
+le bot si `TELEGRAM_BOT_AUTOSTART` est absent ou vaut `true`.
+
+Si tu utilises volontairement un superviseur Python externe, configure :
+
+```text
+TELEGRAM_BOT_AUTOSTART=false
+```
+
+dans l'application Node Plesk, afin d'éviter deux processus de polling.
 
 Après avoir vérifié les variables, effectuer **Pull → Deploy Now → Restart
-App` pour Node, puis redémarrer le service Python du bot. Ses logs doivent
-afficher successivement une connexion Telegram vérifiée, l'initialisation
-PostgreSQL, puis `Starting polling`.
+App`. Le démarrage doit afficher une connexion Telegram vérifiée,
+l'initialisation PostgreSQL, puis `Starting polling`.

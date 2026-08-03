@@ -11,9 +11,9 @@ contient :
 - `telegram-bot/.env.example` : variables du bot.
 
 Le panneau admin et l’API sont servis par **un seul processus Node.js**. Le
-bot Telegram est un **second processus Python indépendant**, car sa version
-actuelle utilise aiogram et SQLAlchemy asynchrones. Node.js ne lance jamais le
-bot.
+bot Telegram reste un processus Python séparé, car sa version actuelle utilise
+aiogram et SQLAlchemy asynchrones, mais il est lancé automatiquement par le
+processus Node Plesk. Replit ne lance jamais le bot.
 
 ## Prérequis
 
@@ -58,7 +58,9 @@ npm start
 ```
 
 Le démarrage exécute les migrations PostgreSQL idempotentes avant d’ouvrir le
-port. Il ne supprime jamais de table et ne remplace jamais de données.
+port, puis démarre automatiquement le bot Python avec les mêmes variables
+d’environnement. Il ne supprime jamais de table et ne remplace jamais de
+données.
 
 ## Configuration PostgreSQL
 
@@ -92,17 +94,16 @@ Le bot est un service séparé. Depuis `telegram-bot/` :
 bash start.sh
 ```
 
-Le bot doit être configuré comme un **service Python séparé sur Plesk**
-(Supervisor, systemd ou gestionnaire de processus Python disponible chez ton
-hébergeur). La commande de démarrage est :
+Le bot est démarré automatiquement par `npm start` comme processus Python
+séparé. La commande ci-dessous sert uniquement au diagnostic manuel :
 
 ```bash
 bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
 Le script crée automatiquement `telegram-bot/.venv`, installe les dépendances
-et lance `main.py`. Les variables d’environnement doivent être configurées
-dans ce service Python, séparément de l’application Node :
+et lance `main.py`. Il reçoit automatiquement les variables configurées dans
+l’application Node Plesk :
 
 ```text
 BOT_TOKEN=<token fourni par BotFather>
@@ -112,6 +113,14 @@ SUPABASE_DATABASE_URL=<URL PostgreSQL Supabase>
 `DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Un fichier local
 `telegram-bot/.env` peut aussi être utilisé sur Plesk, mais il ne doit jamais
 être ajouté à Git.
+
+Ne crée pas un deuxième service Supervisor/systemd pour le bot si
+`TELEGRAM_BOT_AUTOSTART` est absent ou vaut `true`. Pour désactiver le
+lancement automatique uniquement en cas de supervision Python externe :
+
+```text
+TELEGRAM_BOT_AUTOSTART=false
+```
 
 ## Checklist de mise en production
 

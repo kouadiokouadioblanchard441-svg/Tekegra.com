@@ -9,13 +9,15 @@ The Plesk distribution keeps the React admin panel and Express API in one Node.j
 
 **How to apply:** Future Plesk changes should preserve same-origin `/api` routing for the Node app, keep the bot process separate, use `dist/index.cjs` as the Plesk startup file, and avoid putting secrets or `node_modules` into GitHub.
 
-The Plesk production architecture keeps Node.js and the Telegram bot as
-independent services; Replit is development-only and never hosts the bot.
+The Plesk production architecture uses one Node startup entrypoint that serves
+the panel/API and starts the Telegram bot as a separate Python child process;
+Replit is development-only and never hosts the bot.
 
-**Why:** The bot must remain operational on the user's Plesk server even when
-the Replit workspace is stopped, and the Python process has its own environment.
+**Why:** Plesk must start the full product automatically from its configured
+startup file, while the bot must remain a separate Python process with aiogram.
 
-**How to apply:** Run `dist/index.cjs` only for Node.js and run
-`telegram-bot/start.sh` under Supervisor/systemd as Python. Configure
-`BOT_TOKEN` and `DATABASE_URL`/`SUPABASE_DATABASE_URL` in the Python service.
-Keep the `pip --no-user` virtualenv installation.
+**How to apply:** Run `dist/index.cjs` from Plesk; it starts
+`telegram-bot/start.sh` with the same environment. Configure
+`BOT_TOKEN` and `DATABASE_URL`/`SUPABASE_DATABASE_URL` on the Plesk Node
+application. Keep `pip --no-user` in the virtualenv installer, and set
+`TELEGRAM_BOT_AUTOSTART=false` only when an external Python supervisor is used.

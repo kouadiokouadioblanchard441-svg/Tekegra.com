@@ -33,7 +33,7 @@ if missing:
     raise SystemExit(
         "Telegram bot configuration is incomplete. "
         "Missing: " + ", ".join(missing) +
-        ". Configure these variables in the Python/Supervisor process "
+        ". Configure these variables in the Plesk application environment "
         "or create telegram-bot/.env."
     )
 PY

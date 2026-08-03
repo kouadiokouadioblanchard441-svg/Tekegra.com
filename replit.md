@@ -26,13 +26,15 @@ bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
 Replit sert uniquement d'environnement de développement et de préparation du
-build GitHub → Plesk.
+build GitHub → Plesk. En production, les variables sont configurées dans
+l'application Plesk et sont transmises automatiquement au bot Python enfant.
 
 ## Variables d'environnement de développement
 
 Les secrets éventuellement présents dans Replit servent uniquement aux tests
 et au développement. La production utilise les variables configurées dans
-Plesk, séparément pour l'application Node et le processus Python du bot.
+Plesk ; le processus Python du bot les hérite automatiquement du démarrage
+Node.js.
 
 | Variable | Description |
 |----------|-------------|

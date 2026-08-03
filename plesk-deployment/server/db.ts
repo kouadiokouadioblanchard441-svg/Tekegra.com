@@ -1,10 +1,13 @@
 import pg from "pg";
 
 const { Pool } = pg;
-const connectionString = process.env.DATABASE_URL;
+const connectionString =
+  process.env.DATABASE_URL ?? process.env.SUPABASE_DATABASE_URL;
 
 if (!connectionString) {
-  throw new Error("DATABASE_URL is required for the PostgreSQL connection.");
+  throw new Error(
+    "DATABASE_URL or SUPABASE_DATABASE_URL is required for the PostgreSQL connection.",
+  );
 }
 
 const sslEnabled = process.env.DB_SSL === "true";
