@@ -56,10 +56,19 @@ async def main() -> None:
         await init_db()
 
         dp = Dispatcher(storage=MemoryStorage())
-        dp.update.middleware(DbSessionMiddleware())
-        dp.update.middleware(BanCheckMiddleware())
-        dp.update.middleware(ChannelCheckMiddleware())
-        dp.update.middleware(ThrottlingMiddleware(rate=settings.THROTTLE_RATE))
+        # Register middleware on the concrete Telegram event observers.
+        #
+        # `dp.update.middleware(...)` receives an aiogram Update object, not
+        # the contained Message/CallbackQuery.  The access-control middleware
+        # intentionally checks those concrete event types; registering it on
+        # Update could therefore silently block /start without being able to
+        # answer the user.  The DB session must be outermost so it is
+        # available to the access-control middleware and to every handler.
+        for observer in (dp.message, dp.callback_query):
+            observer.outer_middleware(DbSessionMiddleware())
+            observer.outer_middleware(BanCheckMiddleware())
+            observer.outer_middleware(ChannelCheckMiddleware())
+            observer.middleware(ThrottlingMiddleware(rate=settings.THROTTLE_RATE))
         dp.include_router(get_main_router())
 
         # Drop any updates that arrived while the bot was offline so we don't
