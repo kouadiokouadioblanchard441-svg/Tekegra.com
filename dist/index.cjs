@@ -41588,38 +41588,53 @@ async function start() {
       ),
       import_node_path2.default.resolve(executableDir, "..", "telegram-bot", "start.sh")
     ].find((candidate) => (0, import_node_fs2.existsSync)(candidate));
-    if (!botStartScript) {
+    const botRoot = botStartScript ? import_node_path2.default.dirname(botStartScript) : [
+      import_node_path2.default.resolve(process.cwd(), "plesk-deployment", "telegram-bot"),
+      import_node_path2.default.resolve(process.cwd(), "telegram-bot"),
+      import_node_path2.default.resolve(executableDir, "..", "plesk-deployment", "telegram-bot"),
+      import_node_path2.default.resolve(executableDir, "..", "telegram-bot")
+    ].find((candidate) => (0, import_node_fs2.existsSync)(import_node_path2.default.join(candidate, "main.py")));
+    if (!botRoot) {
       setTelegramBotRuntime({
         state: "missing",
-        lastError: "telegram-bot/start.sh was not found"
+        lastError: "telegram-bot/main.py was not found"
       });
       logger.error(
         {
           cwd: process.cwd(),
           executableDir
         },
-        "Telegram bot start.sh was not found in the Plesk deployment"
+        "Telegram bot main.py was not found in the Plesk deployment"
       );
       return;
     }
+    const botMain = import_node_path2.default.join(botRoot, "main.py");
+    if (!(0, import_node_fs2.existsSync)(botMain)) {
+      setTelegramBotRuntime({
+        state: "missing",
+        lastError: "telegram-bot/main.py was not found"
+      });
+      logger.error({ botMain }, "Telegram bot main.py was not found");
+      return;
+    }
+    const virtualenvPython = import_node_path2.default.join(botRoot, ".venv", "bin", "python");
+    const botPython = (0, import_node_fs2.existsSync)(virtualenvPython) ? virtualenvPython : process.env.BOT_PYTHON || "python3";
+    const statusFile = import_node_path2.default.join(
+      "/tmp",
+      `voltatrucks-telegram-bot-${process.pid}.json`
+    );
     setTelegramBotRuntime({
       state: "starting",
-      script: botStartScript,
-      statusFile: import_node_path2.default.join(
-        "/tmp",
-        `voltatrucks-telegram-bot-${process.pid}.json`
-      ),
+      script: botMain,
+      statusFile,
       lastError: void 0,
       botStatus: void 0
     });
-    botProcess = (0, import_node_child_process.spawn)("bash", [botStartScript], {
-      cwd: import_node_path2.default.dirname(botStartScript),
+    botProcess = (0, import_node_child_process.spawn)(botPython, [botMain], {
+      cwd: botRoot,
       env: {
         ...process.env,
-        TELEGRAM_BOT_STATUS_FILE: import_node_path2.default.join(
-          "/tmp",
-          `voltatrucks-telegram-bot-${process.pid}.json`
-        )
+        TELEGRAM_BOT_STATUS_FILE: statusFile
       },
       // Capture the child output in the Node/Plesk logs. Passenger can
       // otherwise discard a short-lived child's stderr, leaving only an
@@ -41632,7 +41647,7 @@ async function start() {
       startedAt: (/* @__PURE__ */ new Date()).toISOString()
     });
     logger.info(
-      { pid: botProcess.pid, script: botStartScript },
+      { pid: botProcess.pid, python: botPython, script: botMain },
       "Telegram bot started by the Plesk app"
     );
     botProcess.stdout?.on("data", (chunk) => {
