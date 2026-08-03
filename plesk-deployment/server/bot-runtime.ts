@@ -72,3 +72,17 @@ export function getTelegramBotRuntime(): TelegramBotRuntime {
     lastExit: runtime.lastExit && { ...runtime.lastExit },
   };
 }
+
+export function recordTelegramBotError(error: string): void {
+  const safeError = error.slice(-4000);
+  runtime = {
+    ...runtime,
+    state: "exited",
+    lastError: safeError,
+    botStatus: {
+      ...(runtime.botStatus ?? {}),
+      status: "failed",
+      error: safeError,
+    },
+  };
+}

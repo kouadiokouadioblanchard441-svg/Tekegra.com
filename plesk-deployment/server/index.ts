@@ -5,7 +5,10 @@ import app from "./app.js";
 import { closeDatabase, pool } from "./db.js";
 import { logger } from "./lib/logger.js";
 import { runMigrations } from "./scripts/migrate.js";
-import { setTelegramBotRuntime } from "./bot-runtime.js";
+import {
+  recordTelegramBotError,
+  setTelegramBotRuntime,
+} from "./bot-runtime.js";
 
 const port = Number(process.env.PORT ?? 3000);
 if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
@@ -135,7 +138,13 @@ async function start(): Promise<void> {
     });
     botProcess.stderr?.on("data", (chunk: Buffer | string) => {
       const message = String(chunk).trim();
-      if (message) logger.error({ pid: botProcess?.pid, output: message }, "Telegram bot stderr");
+      if (message) {
+        recordTelegramBotError(message);
+        logger.error(
+          { pid: botProcess?.pid, output: message },
+          "Telegram bot stderr",
+        );
+      }
     });
 
     botProcess.once("error", (error) => {

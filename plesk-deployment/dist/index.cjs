@@ -39179,6 +39179,19 @@ function getTelegramBotRuntime() {
     lastExit: runtime.lastExit && { ...runtime.lastExit }
   };
 }
+function recordTelegramBotError(error) {
+  const safeError = error.slice(-4e3);
+  runtime = {
+    ...runtime,
+    state: "exited",
+    lastError: safeError,
+    botStatus: {
+      ...runtime.botStatus ?? {},
+      status: "failed",
+      error: safeError
+    }
+  };
+}
 
 // server/routes/health.ts
 var router = (0, import_express.Router)();
@@ -41656,7 +41669,13 @@ async function start() {
     });
     botProcess.stderr?.on("data", (chunk) => {
       const message = String(chunk).trim();
-      if (message) logger.error({ pid: botProcess?.pid, output: message }, "Telegram bot stderr");
+      if (message) {
+        recordTelegramBotError(message);
+        logger.error(
+          { pid: botProcess?.pid, output: message },
+          "Telegram bot stderr"
+        );
+      }
     });
     botProcess.once("error", (error) => {
       setTelegramBotRuntime({
