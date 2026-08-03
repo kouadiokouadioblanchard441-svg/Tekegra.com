@@ -15,6 +15,7 @@ def main_menu_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         row1,
         [InlineKeyboardButton(text="Modifier la langue", callback_data="menu:language")],
+        [InlineKeyboardButton(text="⭐ Premium", callback_data="menu:premium")],
         [InlineKeyboardButton(text="GET SIGNAL", callback_data="menu:get_signal")],
     ])
 
@@ -50,9 +51,13 @@ def game_select_keyboard() -> InlineKeyboardMarkup:
 
 
 # ── Lucky Jet signal page ─────────────────────────────────────────────────────
-def luckyjet_page_keyboard() -> InlineKeyboardMarkup:
+def luckyjet_page_keyboard(premium_cote_type: str | None = None) -> InlineKeyboardMarkup:
+    if premium_cote_type in ("petite", "grosse"):
+        signal_callback = f"lj:choose_type:premium:{premium_cote_type}"
+    else:
+        signal_callback = "lj:choose_type"
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎯 GET SIGNAL", callback_data="lj:choose_type")],
+        [InlineKeyboardButton(text="🎯 GET SIGNAL", callback_data=signal_callback)],
         [InlineKeyboardButton(text="↩ Back", callback_data="menu:game_select")],
     ])
 

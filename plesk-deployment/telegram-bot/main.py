@@ -55,6 +55,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import BotCommand
 
 from bot.handlers import get_main_router
 from bot.middlewares import (
@@ -98,6 +99,15 @@ async def main() -> None:
         token=settings.BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN),
     )
+    await bot.set_my_commands([
+        BotCommand(command="start", description="Démarrer le bot"),
+        BotCommand(command="menu", description="Ouvrir le menu principal"),
+        BotCommand(command="profile", description="Voir mon profil"),
+        BotCommand(command="premium", description="Ouvrir Premium"),
+        BotCommand(command="language", description="Changer de langue"),
+        BotCommand(command="help", description="Afficher l'aide"),
+    ])
+    logger.info("Telegram bot commands published")
 
     try:
         bot_info = await bot.get_me()

@@ -215,9 +215,15 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
     logger.info(f"Free LJ {cote_type} signal for user {user.id}")
 
 
-@router.callback_query(F.data.startswith("lj:signal_premium:"))
-async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
-    cote_type = call.data.split(":")[-1]
+async def _send_premium_signal(
+    call: CallbackQuery,
+    session: AsyncSession,
+    cote_type: str,
+):
+    if cote_type not in ("petite", "grosse"):
+        await call.answer("Mode Premium invalide", show_alert=True)
+        return
+
     user = call.from_user
     svc = UserService(session)
     db_user = await svc.get_or_create(
@@ -286,6 +292,17 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
     )
     await call.answer("⭐ Signal Premium généré !")
     logger.info(f"Premium LJ {cote_type} signal for user {user.id}")
+
+
+@router.callback_query(F.data.startswith("lj:signal_premium:"))
+async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
+    await _send_premium_signal(call, session, call.data.rsplit(":", 1)[-1])
+
+
+@router.callback_query(F.data.startswith("lj:choose_type:premium:"))
+async def cb_premium_get_signal(call: CallbackQuery, session: AsyncSession):
+    """Generate the selected Premium mode from the unchanged GET SIGNAL page."""
+    await _send_premium_signal(call, session, call.data.rsplit(":", 1)[-1])
 
 
 @router.callback_query(F.data == "lj:analyse")

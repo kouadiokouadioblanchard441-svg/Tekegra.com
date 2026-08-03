@@ -103,8 +103,11 @@ async def cb_game_select_inner(call: CallbackQuery, session: AsyncSession):
 
 
 # ── Game pages ────────────────────────────────────────────────────────────────
-@router.callback_query(F.data == "menu:luckyjet")
-async def cb_luckyjet_page(call: CallbackQuery, session: AsyncSession):
+async def _show_luckyjet_page(
+    call: CallbackQuery,
+    session: AsyncSession,
+    premium_cote_type: str | None = None,
+):
     photo = await _banner(session, "luckyjet_banner")
     text = (
         "🚀 *LUCKY JET*\n\n"
@@ -115,8 +118,27 @@ async def cb_luckyjet_page(call: CallbackQuery, session: AsyncSession):
         f"{SEP}\n\n"
         "▶ Appuyez sur *GET SIGNAL* pour obtenir votre prédiction !"
     )
-    await navigate(call, text, luckyjet_page_keyboard(), photo_id=photo)
+    await navigate(
+        call,
+        text,
+        luckyjet_page_keyboard(premium_cote_type),
+        photo_id=photo,
+    )
     await call.answer()
+
+
+@router.callback_query(F.data == "menu:luckyjet")
+async def cb_luckyjet_page(call: CallbackQuery, session: AsyncSession):
+    await _show_luckyjet_page(call, session)
+
+
+@router.callback_query(F.data.startswith("menu:luckyjet:premium:"))
+async def cb_luckyjet_premium_page(call: CallbackQuery, session: AsyncSession):
+    cote_type = call.data.rsplit(":", 1)[-1]
+    if cote_type not in ("petite", "grosse"):
+        await call.answer("Mode Premium invalide", show_alert=True)
+        return
+    await _show_luckyjet_page(call, session, cote_type)
 
 
 @router.callback_query(F.data == "menu:mines")

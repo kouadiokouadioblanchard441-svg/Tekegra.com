@@ -7,13 +7,13 @@ def premium_signal_type_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text="🎯 Petite Côte",
-                callback_data="lj:signal_premium:petite",
+                callback_data="menu:luckyjet:premium:petite",
             ),
         ],
         [
             InlineKeyboardButton(
                 text="🚀 Grosse Côte",
-                callback_data="lj:signal_premium:grosse",
+                callback_data="menu:luckyjet:premium:grosse",
             ),
         ],
     ])
