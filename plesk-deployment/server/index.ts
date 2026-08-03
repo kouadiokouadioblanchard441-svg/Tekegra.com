@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { appendFileSync, existsSync, rmSync } from "node:fs";
 import path from "node:path";
 import app from "./app.js";
 import { closeDatabase, pool } from "./db.js";
@@ -103,11 +103,17 @@ async function start(): Promise<void> {
       "/tmp",
       `voltatrucks-telegram-bot-${process.pid}.json`,
     );
+    const stderrFile = path.join(
+      "/tmp",
+      `voltatrucks-telegram-bot-${process.pid}.stderr.log`,
+    );
+    rmSync(stderrFile, { force: true });
 
     setTelegramBotRuntime({
       state: "starting",
       script: botMain,
       statusFile,
+      stderrFile,
       lastError: undefined,
       botStatus: undefined,
     });
@@ -139,6 +145,11 @@ async function start(): Promise<void> {
     botProcess.stderr?.on("data", (chunk: Buffer | string) => {
       const message = String(chunk).trim();
       if (message) {
+        try {
+          appendFileSync(stderrFile, `${message}\n`, "utf8");
+        } catch {
+          // Logging an error must not interfere with the child process.
+        }
         recordTelegramBotError(message);
         logger.error(
           { pid: botProcess?.pid, output: message },

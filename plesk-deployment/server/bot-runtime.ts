@@ -13,6 +13,7 @@ export interface TelegramBotRuntime {
   pid?: number;
   script?: string;
   statusFile?: string;
+  stderrFile?: string;
   startedAt?: string;
   lastExit?: {
     code: number | null;
@@ -56,6 +57,20 @@ export function getTelegramBotRuntime(): TelegramBotRuntime {
       }
     } catch {
       // The file may not exist while start.sh is installing dependencies.
+    }
+  }
+  if (runtime.stderrFile) {
+    try {
+      const stderr = readFileSync(runtime.stderrFile, "utf8").trim();
+      if (stderr) {
+        botStatus = {
+          ...(botStatus ?? {}),
+          status: "failed",
+          error: stderr.slice(-4000),
+        };
+      }
+    } catch {
+      // The file is created only when the child writes to stderr.
     }
   }
   const state =

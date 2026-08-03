@@ -39171,6 +39171,19 @@ function getTelegramBotRuntime() {
     } catch {
     }
   }
+  if (runtime.stderrFile) {
+    try {
+      const stderr = (0, import_node_fs.readFileSync)(runtime.stderrFile, "utf8").trim();
+      if (stderr) {
+        botStatus = {
+          ...botStatus ?? {},
+          status: "failed",
+          error: stderr.slice(-4e3)
+        };
+      }
+    } catch {
+    }
+  }
   const state = botStatus?.status === "polling" ? "running" : botStatus?.status === "failed" ? "exited" : runtime.state;
   return {
     ...runtime,
@@ -41636,10 +41649,16 @@ async function start() {
       "/tmp",
       `voltatrucks-telegram-bot-${process.pid}.json`
     );
+    const stderrFile = import_node_path2.default.join(
+      "/tmp",
+      `voltatrucks-telegram-bot-${process.pid}.stderr.log`
+    );
+    (0, import_node_fs2.rmSync)(stderrFile, { force: true });
     setTelegramBotRuntime({
       state: "starting",
       script: botMain,
       statusFile,
+      stderrFile,
       lastError: void 0,
       botStatus: void 0
     });
@@ -41670,6 +41689,11 @@ async function start() {
     botProcess.stderr?.on("data", (chunk) => {
       const message = String(chunk).trim();
       if (message) {
+        try {
+          (0, import_node_fs2.appendFileSync)(stderrFile, `${message}
+`, "utf8");
+        } catch {
+        }
         recordTelegramBotError(message);
         logger.error(
           { pid: botProcess?.pid, output: message },
