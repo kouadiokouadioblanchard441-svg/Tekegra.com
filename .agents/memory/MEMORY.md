@@ -3,3 +3,4 @@
 - [Plesk Python runtime](plesk-python-runtime.md) — legacy `.venv` can use an unsupported Python; startup must detect Python 3.10+ and rebuild it.
 - [Mines star modes](mines-star-modes.md) — Mines Premium uses star-count modes, not odds: Petite is 2–5 stars and Grosse is 6–10.
 - [Telegram bot copies](telegram-bot-copies.md) — keep the production Plesk bot and the legacy artifact copy's user-facing keyboards synchronized.
+- [Telegram startup safety](startup-safety.md) — optional Telegram API setup must never block polling or the existing `/start` flow.
