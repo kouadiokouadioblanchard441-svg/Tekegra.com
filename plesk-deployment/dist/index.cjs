@@ -37759,7 +37759,7 @@ var require_jsonwebtoken = __commonJS({
 
 // server/index.ts
 var import_node_child_process = require("node:child_process");
-var import_node_fs = require("node:fs");
+var import_node_fs2 = require("node:fs");
 var import_node_path2 = __toESM(require("node:path"), 1);
 
 // server/app.ts
@@ -39153,12 +39153,31 @@ async function closeDatabase() {
 }
 
 // server/bot-runtime.ts
+var import_node_fs = require("node:fs");
 var runtime = { state: "stopped" };
 function setTelegramBotRuntime(update) {
   runtime = { ...runtime, ...update };
 }
 function getTelegramBotRuntime() {
-  return { ...runtime, lastExit: runtime.lastExit && { ...runtime.lastExit } };
+  let botStatus = runtime.botStatus;
+  if (runtime.statusFile && runtime.pid) {
+    try {
+      const parsed = JSON.parse(
+        (0, import_node_fs.readFileSync)(runtime.statusFile, "utf8")
+      );
+      if (parsed?.pid === runtime.pid) {
+        botStatus = parsed;
+      }
+    } catch {
+    }
+  }
+  const state = botStatus?.status === "polling" ? "running" : botStatus?.status === "failed" ? "exited" : runtime.state;
+  return {
+    ...runtime,
+    state,
+    botStatus,
+    lastExit: runtime.lastExit && { ...runtime.lastExit }
+  };
 }
 
 // server/routes/health.ts
@@ -41566,7 +41585,7 @@ async function start() {
         "start.sh"
       ),
       import_node_path2.default.resolve(executableDir, "..", "telegram-bot", "start.sh")
-    ].find((candidate) => (0, import_node_fs.existsSync)(candidate));
+    ].find((candidate) => (0, import_node_fs2.existsSync)(candidate));
     if (!botStartScript) {
       setTelegramBotRuntime({
         state: "missing",
@@ -41584,15 +41603,23 @@ async function start() {
     setTelegramBotRuntime({
       state: "starting",
       script: botStartScript,
-      lastError: void 0
+      statusFile: import_node_path2.default.join(import_node_path2.default.dirname(botStartScript), ".bot-status.json"),
+      lastError: void 0,
+      botStatus: void 0
     });
     botProcess = (0, import_node_child_process.spawn)("bash", [botStartScript], {
       cwd: import_node_path2.default.dirname(botStartScript),
-      env: process.env,
+      env: {
+        ...process.env,
+        TELEGRAM_BOT_STATUS_FILE: import_node_path2.default.join(
+          import_node_path2.default.dirname(botStartScript),
+          ".bot-status.json"
+        )
+      },
       stdio: "inherit"
     });
     setTelegramBotRuntime({
-      state: "running",
+      state: "starting",
       pid: botProcess.pid,
       startedAt: (/* @__PURE__ */ new Date()).toISOString()
     });

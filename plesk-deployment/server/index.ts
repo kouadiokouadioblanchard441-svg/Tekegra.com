@@ -71,16 +71,24 @@ async function start(): Promise<void> {
     setTelegramBotRuntime({
       state: "starting",
       script: botStartScript,
+      statusFile: path.join(path.dirname(botStartScript), ".bot-status.json"),
       lastError: undefined,
+      botStatus: undefined,
     });
 
     botProcess = spawn("bash", [botStartScript], {
       cwd: path.dirname(botStartScript),
-      env: process.env,
+      env: {
+        ...process.env,
+        TELEGRAM_BOT_STATUS_FILE: path.join(
+          path.dirname(botStartScript),
+          ".bot-status.json",
+        ),
+      },
       stdio: "inherit",
     });
     setTelegramBotRuntime({
-      state: "running",
+      state: "starting",
       pid: botProcess.pid,
       startedAt: new Date().toISOString(),
     });
