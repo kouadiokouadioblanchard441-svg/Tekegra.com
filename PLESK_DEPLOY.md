@@ -56,6 +56,12 @@ d'environnement de l'application Node Plesk. **Plesk héberge toute la
 production sur ce même VPS** : le panel et l'API avec Node.js, et le bot
 Telegram avec Python/systemd. Il n'y a pas de deuxième serveur.
 
+Par défaut, `dist/index.cjs` démarre automatiquement
+`plesk-deployment/telegram-bot/start.sh` et lui transmet les variables Plesk.
+N'active pas en même temps le service systemd `telegram-bot`, sinon deux
+processus feront du polling avec le même token. Utilise systemd uniquement si
+tu définis `TELEGRAM_BOT_AUTOSTART=false`.
+
 Si Plesk propose l'installation NPM, elle peut être désactivée : `dist/index.cjs`
 est un bundle autonome. Le package de build se trouve dans
 `plesk-deployment/`.
@@ -107,9 +113,11 @@ champ **Application startup file** est configuré sur une ancienne valeur.
 Il faut régler la racine sur `/voltatrucks.online` et le startup file sur
 `dist/index.cjs`.
 
-Le bot Telegram n'est pas lancé par Replit. Il est lancé sur le **même VPS
-Plesk** avec Python et systemd. Depuis le terminal du serveur Plesk, installe
-le service :
+Le bot Telegram n'est pas lancé par Replit. Par défaut, il est lancé sur le
+**même VPS Plesk** par `dist/index.cjs`, avec Python. Si tu préfères utiliser
+systemd à la place, définis d'abord `TELEGRAM_BOT_AUTOSTART=false` dans les
+variables de l'application Node, puis installe le service depuis le terminal
+du serveur Plesk :
 
 ```bash
 sudo useradd --system --home /voltatrucks.online --shell /usr/sbin/nologin telegrambot || true
@@ -130,10 +138,11 @@ d'accès au dossier. Remplis le fichier privé
 `/voltatrucks.online/plesk-deployment/telegram-bot/.env` avec `BOT_TOKEN` et
 `SUPABASE_DATABASE_URL` ou `DATABASE_URL`.
 
-Les variables de l'application Node.js Plesk ne sont pas automatiquement
-héritées par le service systemd Python. Le même `BOT_TOKEN` doit donc être
-configuré dans l'application Node pour les broadcasts API et dans le `.env`
-privé du bot pour le polling. Ne mets jamais le token dans le code ou GitHub.
+Avec l'autostart Plesk, les variables `BOT_TOKEN` et
+`SUPABASE_DATABASE_URL` configurées dans l'application Node sont transmises au
+bot Python. Avec systemd, elles doivent être présentes dans le `.env` privé du
+bot, car systemd ne reçoit pas automatiquement l'environnement Node. Dans les
+deux cas, ne mets jamais le token dans le code ou GitHub.
 Le service Python crée automatiquement le virtualenv, installe les
 dépendances, vérifie Telegram, initialise PostgreSQL et démarre le polling.
 
@@ -176,6 +185,10 @@ ADMIN_PASSWORD_RESET=true
 Redémarre l'application Plesk une fois, puis remets immédiatement
 `ADMIN_PASSWORD_RESET=false` et redémarre encore une fois. Ne mets jamais le
 mot de passe en clair dans GitHub.
+
+`ADMIN_ID` est uniquement l'identifiant Telegram de l'administrateur. Il ne
+sert pas de mot de passe pour le panel. Le code à saisir dans le panel est la
+valeur configurée dans `ADMIN_PASSWORD`.
 
 Après le **Pull → Deploy Now → Restart App** de Plesk, vérifie :
 

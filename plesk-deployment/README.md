@@ -60,6 +60,8 @@ npm start
 Le démarrage exécute les migrations PostgreSQL idempotentes avant d’ouvrir le
 port. Il initialise aussi le hash du mot de passe admin si `ADMIN_PASSWORD` est
 configuré. Il ne supprime jamais de table et ne remplace jamais de données.
+Il démarre également le bot Python local avec les mêmes variables Plesk, sauf
+si `TELEGRAM_BOT_AUTOSTART=false`.
 
 ## Configuration PostgreSQL
 
@@ -87,8 +89,8 @@ Une réponse saine ressemble à :
 
 ## Déploiement du bot Telegram sur le même VPS Plesk
 
-Le bot n'est pas lancé par Replit. Il doit être lancé sur le même serveur Plesk
-avec Python/systemd :
+Le bot n'est pas lancé par Replit. Par défaut, il est lancé automatiquement par
+le processus Node Plesk avec Python :
 
 ```bash
 bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
@@ -104,15 +106,15 @@ BOT_TOKEN=<token fourni par BotFather>
 SUPABASE_DATABASE_URL=<URL PostgreSQL Supabase>
 ```
 
-`DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Les variables du bot
-doivent être configurées dans
-`/voltatrucks.online/plesk-deployment/telegram-bot/.env` et ne doivent jamais
-être ajoutées à Git.
+`DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Les variables définies
+dans l'application Node Plesk sont transmises au bot. Le fichier privé
+`/voltatrucks.online/plesk-deployment/telegram-bot/.env` peut aussi être utilisé
+et ne doit jamais être ajouté à Git.
 
-Attention : les variables définies dans l'application Node.js de Plesk ne sont
-pas automatiquement transmises au service `systemd` Python. Configure donc
-`BOT_TOKEN` et l'URL PostgreSQL dans le `.env` privé du bot, même si `BOT_TOKEN`
-est également configuré dans l'application Node pour les broadcasts API.
+Si tu choisis systemd au lieu de l'autostart Node, définis
+`TELEGRAM_BOT_AUTOSTART=false` dans Plesk et configure alors les variables dans
+le `EnvironmentFile` du service systemd. N'utilise pas les deux méthodes en
+même temps.
 
 ## Mot de passe admin
 
@@ -138,8 +140,8 @@ Plesk une fois, puis remets la variable à `false`.
 - [ ] La page `/login` s’affiche après un redémarrage de l’application.
 - [ ] Le mot de passe admin est déjà présent sous la clé
       `bot_settings.admin_password_hash`.
-- [ ] Le bot démarre avec `systemd` sur le même VPS Plesk et reçoit les mises à
-      jour Telegram.
+- [ ] Le bot démarre automatiquement avec l'application Plesk et reçoit les
+      mises à jour Telegram.
 - [ ] Les logs Node sont consultables dans Plesk et les logs Python avec
       `journalctl -u telegram-bot`.
 - [ ] Les sauvegardes PostgreSQL et la rotation des logs sont activées.

@@ -19,24 +19,22 @@ Les services de développement Replit disponibles sont :
 - **`artifacts/api-server: API Server`** — API Express sur `/api`
 
 Le bot Telegram **n'est pas lancé par Replit**. Il est exécuté sur le **même VPS
-qui héberge Plesk**, comme service Python `systemd` avec :
+qui héberge Plesk**, automatiquement par le processus Node Plesk avec :
 
 ```bash
-systemctl enable --now telegram-bot
+dist/index.cjs
 ```
 
 Replit sert uniquement d'environnement de développement et de préparation du
-build GitHub → Plesk. En production, les variables du panel/API et du bot sont
-configurées sur ce même serveur Plesk.
+build GitHub → Plesk. En production, les variables du panel/API sont configurées
+dans Plesk et transmises au bot Python local.
 
 ## Variables d'environnement de développement
 
 Les secrets éventuellement présents dans Replit servent uniquement aux tests
 et au développement. La production utilise les variables configurées dans
-Plesk pour le panel/API et dans le service Python du même VPS Plesk.
-Le service Python `systemd` ne reçoit pas automatiquement les variables de
-l'application Node Plesk : son `BOT_TOKEN` et son URL PostgreSQL doivent aussi
-être présents dans `/voltatrucks.online/plesk-deployment/telegram-bot/.env`.
+Plesk pour le panel/API et le bot Python du même VPS Plesk. Le service systemd
+fourni reste une alternative ; ne l'active pas si l'autostart Node est utilisé.
 
 | Variable | Description |
 |----------|-------------|

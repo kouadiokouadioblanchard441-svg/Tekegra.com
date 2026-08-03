@@ -23,6 +23,27 @@ router.post("/admin/login", async (req, res) => {
   }
 
   try {
+    const configuredPassword = process.env.ADMIN_PASSWORD;
+    if (configuredPassword && configuredPassword.length >= 6) {
+      if (password !== configuredPassword) {
+        res.status(401).json({ error: "Invalid password" });
+        return;
+      }
+
+      // Keep the database hash synchronized with the explicitly configured
+      // Plesk password, even when an old hash already exists in Supabase.
+      const passwordHash = await bcrypt.hash(configuredPassword, 12);
+      await pool.query(
+        `INSERT INTO bot_settings (key, value)
+         VALUES ('admin_password_hash', $1)
+         ON CONFLICT (key) DO UPDATE
+         SET value = EXCLUDED.value, updated_at = NOW()`,
+        [passwordHash],
+      );
+      res.json({ token: signToken() });
+      return;
+    }
+
     const hash = await getStoredPasswordHash();
     if (!hash) {
       res.status(503).json({ error: "Admin password is not configured in Supabase" });
