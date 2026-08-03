@@ -47,15 +47,16 @@ if [[ ! -x "$VENV/bin/python" ]]; then
   "$PYTHON" -m venv "$VENV"
 fi
 
-# Some hosting environments set PIP_USER globally. That is incompatible with
-# a virtualenv ("user site-packages are not visible in this virtualenv"), so
-# explicitly keep both pip operations inside the bot virtualenv.
-CURRENT_STAGE="upgrade_pip"
-echo "Telegram bot startup: upgrading pip" >&2
-"$VENV/bin/python" -m pip install --no-user --quiet --upgrade pip
+# Do not self-upgrade pip on every Plesk restart. Some Plesk/Passenger
+# environments block pip's self-update or return exit code 2 before Python
+# starts. The virtualenv already contains a usable pip; only install the
+# application's pinned dependencies.
 CURRENT_STAGE="install_requirements"
 echo "Telegram bot startup: installing Python requirements" >&2
-"$VENV/bin/python" -m pip install --no-user --quiet -r "$BOT_ROOT/requirements.txt"
+"$VENV/bin/python" -m pip install \
+  --no-user \
+  --disable-pip-version-check \
+  -r "$BOT_ROOT/requirements.txt"
 
 # Validate the configuration before starting polling. The Python systemd
 # service does not inherit the environment of the separate Plesk Node.js app,
