@@ -3,10 +3,12 @@ from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.enums import ChatMemberStatus
 from aiogram.types import CallbackQuery
+from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 from bot.utils.message_cleaner import track_existing_message
 
 from config import settings
+from bot.services.settings_service import get_affiliate_link
 
 router = Router()
 
@@ -20,7 +22,7 @@ _MEMBER_STATUSES = {
 
 
 @router.callback_query(lambda c: c.data == "sub:check")
-async def cb_check_subscription(call: CallbackQuery):
+async def cb_check_subscription(call: CallbackQuery, session: AsyncSession):
     """Re-check channel membership when the user taps 'J'ai rejoint'."""
     required = settings.required_channel_ids
     user_id = call.from_user.id
@@ -57,12 +59,13 @@ async def cb_check_subscription(call: CallbackQuery):
         f"{SEP}\n\n"
         f"🚀 Bienvenue *{call.from_user.first_name or 'Joueur'}* !"
     )
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
 
     try:
         await call.message.edit_text(
             text,
             parse_mode="Markdown",
-            reply_markup=main_menu_keyboard(settings.BOT_AFFILIATE_LINK),
+            reply_markup=main_menu_keyboard(affiliate_link),
         )
         await track_existing_message(user_id, call.message)
     except TelegramBadRequest:
@@ -72,7 +75,7 @@ async def cb_check_subscription(call: CallbackQuery):
             user_id,
             text,
             parse_mode="Markdown",
-            reply_markup=main_menu_keyboard(settings.BOT_AFFILIATE_LINK),
+            reply_markup=main_menu_keyboard(affiliate_link),
         )
 
     await call.answer("✅ Accès débloqué !")

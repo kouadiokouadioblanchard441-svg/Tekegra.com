@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.services.signals import generate_rocketqueen_signal
 from bot.services.user_service import UserService
+from bot.services.settings_service import get_affiliate_link
 from bot.utils.formatters import format_rocketqueen_signal, format_countdown
 from bot.utils.message_cleaner import (
     delete_previous_signal,
@@ -108,7 +109,10 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
 
     await _send_signal_message(
         call, text,
-        rocketqueen_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+        rocketqueen_after_signal_keyboard(
+            await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK),
+            cote_type,
+        ),
     )
     await call.answer("✅ Signal Rocket Queen généré !")
     logger.info(f"Free RQ {cote_type} signal for user {user.id}")
@@ -178,7 +182,10 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
 
     await _send_signal_message(
         call, text,
-        rocketqueen_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+        rocketqueen_after_premium_keyboard(
+            await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK),
+            cote_type,
+        ),
     )
     await call.answer("⭐ Signal Premium Rocket Queen généré !")
     logger.info(f"Premium RQ {cote_type} signal for user {user.id}")

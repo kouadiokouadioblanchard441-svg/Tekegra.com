@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.services.signals import generate_luckyjet_signal
 from bot.services.user_service import UserService
+from bot.services.settings_service import get_affiliate_link
 from bot.utils.formatters import (
     format_luckyjet_signal, format_luckyjet_analysis,
 )
@@ -134,7 +135,8 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         verification_code=signal.get("verification_code", ""),
         rounds_analysed=signal.get("rounds_analysed", 0),
     )
-    kb = luckyjet_after_signal_keyboard() if not is_premium else luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, "grosse")
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    kb = luckyjet_after_signal_keyboard() if not is_premium else luckyjet_after_premium_keyboard(affiliate_link, "grosse")
     await _send_signal_message(call, text, kb)
     await call.answer("✅ Signal généré !")
     logger.info(f"LJ get_signal for user {user.id} (premium={is_premium})")
@@ -204,7 +206,10 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
 
     await _send_signal_message(
         call, text,
-        luckyjet_after_signal_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+        luckyjet_after_signal_keyboard(
+            await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK),
+            cote_type,
+        ),
     )
     await call.answer("✅ Signal généré !")
     logger.info(f"Free LJ {cote_type} signal for user {user.id}")
@@ -274,7 +279,10 @@ async def cb_premium_signal(call: CallbackQuery, session: AsyncSession):
 
     await _send_signal_message(
         call, text,
-        luckyjet_after_premium_keyboard(settings.BOT_AFFILIATE_LINK, cote_type),
+        luckyjet_after_premium_keyboard(
+            await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK),
+            cote_type,
+        ),
     )
     await call.answer("⭐ Signal Premium généré !")
     logger.info(f"Premium LJ {cote_type} signal for user {user.id}")

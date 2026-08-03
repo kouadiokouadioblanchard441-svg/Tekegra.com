@@ -389,7 +389,7 @@ def generate_mines_signal(is_premium: bool = False, star_mode: str = "auto") -> 
     safe_probability = round((safe_tiles / 25) * 100)
 
     if is_premium and star_mode == "petite":
-        requested_stars = random.randint(3, 5)
+        requested_stars = random.randint(2, 5)
     elif is_premium and star_mode == "grosse":
         requested_stars = random.randint(6, 10)
     else:
@@ -439,18 +439,16 @@ def _generate_mines_grid(
     mine_positions = set(positions[:mines_count])
     safe_positions = positions[mines_count:]
 
-    # Premium Petite : 3–5 étoiles, Premium Grosse : 6–10 étoiles.
+    # Premium Petite : 2–5 étoiles, Premium Grosse : 6–10 étoiles.
     # Gratuit conserve son fonctionnement actuel avec 3 étoiles.
     highlight_count = min(
         len(safe_positions),
         star_count if star_count is not None else (5 if is_premium else 3),
     )
 
-    # Anti-clustering : on préfère des cases révélées bien espacées
-    if is_premium and len(safe_positions) >= 5:
-        highlighted = _spread_highlights(safe_positions, highlight_count)
-    else:
-        highlighted = set(safe_positions[:highlight_count])
+    # Tirage aléatoire à chaque grille : les étoiles ne restent pas aux mêmes
+    # emplacements d'une génération à l'autre.
+    highlighted = set(random.sample(safe_positions, highlight_count))
 
     flat: list[str] = []
     for idx in range(GRID):

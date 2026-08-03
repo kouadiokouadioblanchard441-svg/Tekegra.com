@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.services.user_service import UserService
-from bot.services.settings_service import BotSettingsService
+from bot.services.settings_service import BotSettingsService, get_affiliate_link
 from bot.keyboards.main_menu import main_menu_keyboard, language_keyboard, back_to_main_keyboard
 from bot.keyboards.admin import admin_approve_reject_keyboard
 from bot.utils.navigation import send_menu
@@ -113,7 +113,8 @@ async def cmd_start(message: Message, session: AsyncSession):
         f"◉ *1WIN GAME PREDICTOR* [*{settings.BOT_PROMO_CODE}*]\n\n"
         f"🔥 Activate the bot now and start winning! 🚀"
     )
-    await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await send_menu(message, text, main_menu_keyboard(affiliate_link), photo_id=photo)
 
 
 @router.message(F.text.casefold() == "start")
@@ -127,7 +128,8 @@ async def cmd_menu(message: Message, session: AsyncSession):
     bss = BotSettingsService(session)
     photo = await bss.get("menu_banner")
     text = "🎮 *Menu*\n\nChoisis une option ci-dessous 👇"
-    await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await send_menu(message, text, main_menu_keyboard(affiliate_link), photo_id=photo)
 
 
 @router.message(Command("language"))
@@ -158,7 +160,8 @@ async def cmd_help(message: Message, session: AsyncSession):
         f"{SEP}\n\n"
         f"🎁 Code promo : *{settings.BOT_PROMO_CODE}*"
     )
-    await send_menu(message, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await send_menu(message, text, main_menu_keyboard(affiliate_link), photo_id=photo)
 
 
 @router.message(Command("profile"))

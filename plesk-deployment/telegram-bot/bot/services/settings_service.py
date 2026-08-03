@@ -6,6 +6,16 @@ from sqlalchemy import select
 from database.models import BotSettings
 
 
+async def get_affiliate_link(
+    session: AsyncSession,
+    fallback: str = "",
+) -> str:
+    """Return the admin-panel affiliate link, falling back to environment config."""
+    configured = await BotSettingsService(session).get("affiliate_link")
+    configured = (configured or "").strip()
+    return configured or fallback.strip()
+
+
 class BotSettingsService:
 
     def __init__(self, session: AsyncSession):

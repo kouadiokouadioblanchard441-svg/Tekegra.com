@@ -4,7 +4,7 @@ description: Functional meaning of the two Premium Mines modes.
 ---
 
 For Mines Premium, the Petite and Grosse choices refer only to the number of
-recommended stars, never to betting odds or cote ranges. Petite generates 3–5
+recommended stars, never to betting odds or cote ranges. Petite generates 2–5
 stars; Grosse generates 6–10 stars.
 
 **Why:** Mines has no prediction multiplier, so describing these choices as

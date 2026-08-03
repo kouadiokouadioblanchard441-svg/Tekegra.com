@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.services.signals import generate_mines_signal
 from bot.services.user_service import UserService
+from bot.services.settings_service import get_affiliate_link
 from bot.utils.formatters import format_mines_signal, format_countdown
 from bot.utils.message_cleaner import (
     delete_previous_signal,
@@ -81,6 +82,7 @@ async def _send_mines_signal(
     is_premium: bool,
     remaining: int | None = None,
     star_mode: str = "auto",
+    affiliate_link: str = "",
 ) -> None:
     """Delete trigger message, send loading, then edit to the final mines grid."""
     # The previous response can be a menu or an older signal. Remove it before
@@ -104,7 +106,7 @@ async def _send_mines_signal(
     keyboard = mines_grid_keyboard(
         grid=signal.get("grid", []),
         is_premium=is_premium,
-        affiliate_link=settings.BOT_AFFILIATE_LINK,
+        affiliate_link=affiliate_link,
         star_mode=signal.get("star_mode", star_mode),
     )
     await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
@@ -186,7 +188,13 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
         signal = generate_mines_signal(is_premium=False)
 
     await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
-    await _send_mines_signal(call, signal, is_premium=is_premium)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await _send_mines_signal(
+        call,
+        signal,
+        is_premium=is_premium,
+        affiliate_link=affiliate_link,
+    )
     await call.answer("✅ Grille générée !")
     logger.info(f"Mines get_signal for user {user.id} (premium={is_premium})")
 
@@ -233,7 +241,14 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
 
     signal = generate_mines_signal(is_premium=False)
     await svc.save_signal(user.id, "mines", signal, is_premium=False)
-    await _send_mines_signal(call, signal, is_premium=False, remaining=remaining)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await _send_mines_signal(
+        call,
+        signal,
+        is_premium=False,
+        remaining=remaining,
+        affiliate_link=affiliate_link,
+    )
     await call.answer("✅ Grille Mines générée !")
     logger.info(f"Free Mines grid for user {user.id} — {signal['mines']} mines")
 
@@ -313,7 +328,13 @@ async def cb_mines_premium_type(call: CallbackQuery, session: AsyncSession):
     signal = generate_mines_signal(is_premium=True, star_mode=star_mode)
     await svc.consume_premium_signal(db_user)
     await svc.save_signal(user.id, "mines", signal, is_premium=True)
-    await _send_mines_signal(call, signal, is_premium=True)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await _send_mines_signal(
+        call,
+        signal,
+        is_premium=True,
+        affiliate_link=affiliate_link,
+    )
     await call.answer("⭐ Grille Premium Mines générée !")
     logger.info(
         f"Premium Mines {star_mode} grid for user {user.id} — "
@@ -335,15 +356,16 @@ async def cb_cell_tap(call: CallbackQuery):
 
 
 @router.callback_query(F.data == "mines:analyse")
-async def cb_mines_analyse(call: CallbackQuery):
+async def cb_mines_analyse(call: CallbackQuery, session: AsyncSession):
     await call.message.edit_text("⏳ *Chargement Mines...*", parse_mode="Markdown")
     await asyncio.sleep(0.5)
     signal = generate_mines_signal(is_premium=False)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
     header = _grid_header(signal, is_premium=False)
     keyboard = mines_grid_keyboard(
         grid=signal.get("grid", []),
         is_premium=False,
-        affiliate_link=settings.BOT_AFFILIATE_LINK,
+        affiliate_link=affiliate_link,
     )
     await call.message.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
     await track_existing_message(call.from_user.id, call.message)

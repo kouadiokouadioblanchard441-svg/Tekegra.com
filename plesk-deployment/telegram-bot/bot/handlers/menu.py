@@ -14,7 +14,7 @@ from bot.keyboards.main_menu import (
     back_to_main_keyboard,
 )
 from bot.services.user_service import UserService
-from bot.services.settings_service import BotSettingsService
+from bot.services.settings_service import BotSettingsService, get_affiliate_link
 from bot.utils.navigation import navigate
 from config import settings
 
@@ -34,7 +34,8 @@ async def _banner(session: AsyncSession, key: str) -> str | None:
 async def cb_main_menu(call: CallbackQuery, session: AsyncSession):
     photo = await _banner(session, "menu_banner")
     text = "🎮 *Menu*\n\nChoisis une option ci-dessous 👇"
-    await navigate(call, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await navigate(call, text, main_menu_keyboard(affiliate_link), photo_id=photo)
     await call.answer()
 
 
@@ -53,6 +54,7 @@ async def cb_get_signal(call: CallbackQuery, session: AsyncSession):
     # If not registered → show inscription page
     if not db_user or not db_user.has_registered:
         photo = await _banner(session, "register_banner")
+        affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
         text = (
             "🔷 *Pour profiter pleinement du bot, suivez ces 3 étapes :* ↓\n\n"
             "◇──────────────────────────◇\n\n"
@@ -65,7 +67,7 @@ async def cb_get_signal(call: CallbackQuery, session: AsyncSession):
             "automatiquement après l'inscription ✅\n\n"
             "◇──────────────────────────◇"
         )
-        await navigate(call, text, register_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
+        await navigate(call, text, register_keyboard(affiliate_link), photo_id=photo)
         await call.answer()
         return
 
@@ -158,7 +160,8 @@ async def cb_set_language(call: CallbackQuery, session: AsyncSession):
 
     photo = await _banner(session, "menu_banner")
     text = f"✅ Langue changée : *{name}*\n\nChoisis une option ci-dessous 👇"
-    await navigate(call, text, main_menu_keyboard(settings.BOT_AFFILIATE_LINK), photo_id=photo)
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
+    await navigate(call, text, main_menu_keyboard(affiliate_link), photo_id=photo)
     await call.answer(f"✅ {name}")
 
 
@@ -166,6 +169,7 @@ async def cb_set_language(call: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data == "menu:guide")
 async def cb_guide(call: CallbackQuery, session: AsyncSession):
     photo = await _banner(session, "guide_banner")
+    affiliate_link = await get_affiliate_link(session, settings.BOT_AFFILIATE_LINK)
     text = (
         "🤖 *Comment fonctionne le bot ?*\n\n"
         "Notre bot utilise des algorithmes avancés et de l'intelligence artificielle (IA) "
@@ -187,7 +191,7 @@ async def cb_guide(call: CallbackQuery, session: AsyncSession):
     await navigate(
         call, text,
         guide_keyboard(
-            affiliate_link=settings.BOT_AFFILIATE_LINK,
+            affiliate_link=affiliate_link,
             channel_1_link=settings.CHANNEL_1_LINK,
             channel_1_name=settings.CHANNEL_1_NAME,
             channel_2_link=settings.CHANNEL_2_LINK,
