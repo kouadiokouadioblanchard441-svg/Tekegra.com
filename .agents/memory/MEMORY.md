@@ -1,2 +1,3 @@
 - [Plesk packaging](plesk-packaging.md) — keep the Node admin/API process and Python Telegram bot as separate services sharing PostgreSQL.
 - [Aiogram middleware scope](aiogram-middleware-scope.md) — event middleware must attach to concrete message/callback observers when handlers inspect those event types.
+- [Plesk Python runtime](plesk-python-runtime.md) — legacy `.venv` can use an unsupported Python; startup must detect Python 3.10+ and rebuild it.
