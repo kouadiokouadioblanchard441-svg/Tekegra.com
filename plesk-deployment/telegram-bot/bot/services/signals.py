@@ -364,7 +364,7 @@ def generate_aviator_signal(is_premium: bool = False) -> dict:
 
 # ─── Mines ────────────────────────────────────────────────────────────────────
 
-def generate_mines_signal(is_premium: bool = False) -> dict:
+def generate_mines_signal(is_premium: bool = False, cote_type: str = "auto") -> dict:
     heure = _get_signal_time()
     if is_premium:
         mines_options = [1, 2, 3, 5, 10, 15]
@@ -399,6 +399,7 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
         "risque": risque,
         "countdown": countdown,
         "is_premium": is_premium,
+        "cote_type": cote_type,
         "grid": grid,
         "mine_positions": [
             i for i, cell in enumerate(sum(grid, []))

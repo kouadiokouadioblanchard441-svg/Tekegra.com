@@ -6,6 +6,7 @@ def mines_grid_keyboard(
     grid: list[list[str]],
     is_premium: bool = False,
     affiliate_link: str = "",
+    cote_type: str = "auto",
 ) -> InlineKeyboardMarkup:
     """
     Build a 5×5 inline keyboard from the grid matrix.
@@ -23,8 +24,13 @@ def mines_grid_keyboard(
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:mines"),
     ]
     if is_premium:
+        premium_callback = "mines:signal_premium"
+        premium_label = "⭐ Nouveau signal premium"
+        if cote_type in ("petite", "grosse"):
+            premium_callback = f"mines:signal_premium:{cote_type}"
+            premium_label += " 🎯 Petite Côte" if cote_type == "petite" else " 🚀 Grosse Côte"
         action_row[0] = InlineKeyboardButton(
-            text="⭐ Nouveau signal premium", callback_data="mines:signal_premium"
+            text=premium_label, callback_data=premium_callback
         )
     buttons.append(action_row)
 

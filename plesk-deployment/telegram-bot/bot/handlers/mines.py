@@ -14,7 +14,12 @@ from bot.utils.message_cleaner import (
     track_signal_message,
     schedule_delete,
 )
-from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard, mines_choose_keyboard
+from bot.keyboards.mines import (
+    mines_menu_keyboard,
+    mines_after_signal_keyboard,
+    mines_choose_keyboard,
+    mines_premium_type_keyboard,
+)
 from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
 from config import settings
@@ -53,6 +58,13 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
         grid_text,
         "",
     ]
+    if is_premium and signal.get("cote_type") in ("petite", "grosse"):
+        mode_label = (
+            "🎯 Petite Côte"
+            if signal["cote_type"] == "petite"
+            else "🚀 Grosse Côte"
+        )
+        lines.insert(5, f"|●>*TYPE DE COTE : {mode_label}*")
     if remaining is not None and not is_premium:
         lines.append(f"🎯 Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*")
     lines.append(f"🎁 code promo: *{settings.BOT_PROMO_CODE}*")
@@ -64,6 +76,7 @@ async def _send_mines_signal(
     signal: dict,
     is_premium: bool,
     remaining: int | None = None,
+    cote_type: str = "auto",
 ) -> None:
     """Delete trigger message, send loading, then edit to the final mines grid."""
     # The previous response can be a menu or an older signal. Remove it before
@@ -88,6 +101,7 @@ async def _send_mines_signal(
         grid=signal.get("grid", []),
         is_premium=is_premium,
         affiliate_link=settings.BOT_AFFILIATE_LINK,
+        cote_type=signal.get("cote_type", cote_type),
     )
     await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
 
@@ -141,8 +155,16 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
     is_premium = db_user.is_premium
 
     if is_premium:
-        signal = generate_mines_signal(is_premium=True)
-        await svc.consume_premium_signal(db_user)
+        await call.message.edit_text(
+            "💣 *MINES PREMIUM*\n\n"
+            f"{SEP}\n\n"
+            "Choisissez le type de côte :",
+            parse_mode="Markdown",
+            reply_markup=mines_premium_type_keyboard(),
+        )
+        await track_existing_message(user.id, call.message)
+        await call.answer()
+        return
     else:
         allowed, remaining = await svc.try_consume_free_signal(db_user)
         if not allowed:
@@ -249,14 +271,50 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
         await call.answer("🔒 Premium requis")
         return
 
+    await call.message.edit_text(
+        "💣 *MINES PREMIUM*\n\n"
+        f"{SEP}\n\n"
+        "Choisissez le type de côte :",
+        parse_mode="Markdown",
+        reply_markup=mines_premium_type_keyboard(),
+    )
+    await track_existing_message(user.id, call.message)
+    await call.answer()
+    return
+
+
+@router.callback_query(F.data.startswith("mines:signal_premium:"))
+async def cb_mines_premium_type(call: CallbackQuery, session: AsyncSession):
+    cote_type = call.data.split(":")[-1]
+    if cote_type not in ("petite", "grosse"):
+        await call.answer("❌ Type de côte invalide", show_alert=True)
+        return
+
+    user = call.from_user
+    svc = UserService(session)
+    db_user = await svc.get_or_create(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language_code=user.language_code,
+    )
+
+    if not db_user.is_premium:
+        await call.answer("🔒 Premium requis", show_alert=True)
+        return
+
     await delete_previous_signal(user.id)
 
-    signal = generate_mines_signal(is_premium=True)
+    signal = generate_mines_signal(is_premium=True, cote_type=cote_type)
     await svc.consume_premium_signal(db_user)
     await svc.save_signal(user.id, "mines", signal, is_premium=True)
     await _send_mines_signal(call, signal, is_premium=True)
     await call.answer("⭐ Grille Premium Mines générée !")
-    logger.info(f"Premium Mines grid for user {user.id} — {signal['mines']} mines")
+    logger.info(
+        f"Premium Mines {cote_type} grid for user {user.id} — "
+        f"{signal['mines']} mines"
+    )
 
 
 # Tap on a cell — just acknowledge
@@ -316,8 +374,17 @@ async def cb_mines_history(call: CallbackQuery, session: AsyncSession):
             data = r.signal_data
             badge = "⭐" if r.is_premium else "🎯"
             ts = r.created_at.strftime("%d/%m %H:%M")
+            cote_type = data.get("cote_type")
+            mode_label = (
+                " | 🎯 Petite Côte"
+                if cote_type == "petite"
+                else " | 🚀 Grosse Côte"
+                if cote_type == "grosse"
+                else ""
+            )
             lines.append(
-                f"│{badge} *{ts}* — {data.get('mines', '?')} mines | Risque: {data.get('risque', '?')}"
+                f"│{badge} *{ts}* — {data.get('mines', '?')} mines | "
+                f"Risque: {data.get('risque', '?')}{mode_label}"
             )
         lines.append(SEP)
         text = "\n".join(lines)

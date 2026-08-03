@@ -1,6 +1,27 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
+def mines_premium_type_keyboard() -> InlineKeyboardMarkup:
+    """Signal mode choices shown to active Premium Mines users."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🎯 Petite Côte",
+                callback_data="mines:signal_premium:petite",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="🚀 Grosse Côte",
+                callback_data="mines:signal_premium:grosse",
+            ),
+        ],
+        [
+            InlineKeyboardButton(text="⬅ Retour", callback_data="menu:mines"),
+        ],
+    ])
+
+
 def mines_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup:
     """Écran de choix : Gratuit ou Premium."""
     if remaining > 0:
