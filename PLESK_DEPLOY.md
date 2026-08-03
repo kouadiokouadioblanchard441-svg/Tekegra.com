@@ -52,9 +52,9 @@ Dans **Websites & Domains → Node.js** :
 | Application mode | Production |
 
 Ajoute les variables de `plesk-deployment/.env.example` dans les variables
-d'environnement de l'application Node Plesk. Plesk héberge uniquement le panel
-administrateur et l'API Node.js. Le bot Telegram est installé sur le VPS avec
-le service systemd fourni dans `deployment/`.
+d'environnement de l'application Node Plesk. **Plesk héberge toute la
+production sur ce même VPS** : le panel et l'API avec Node.js, et le bot
+Telegram avec Python/systemd. Il n'y a pas de deuxième serveur.
 
 Si Plesk propose l'installation NPM, elle peut être désactivée : `dist/index.cjs`
 est un bundle autonome. Le package de build se trouve dans
@@ -107,16 +107,16 @@ champ **Application startup file** est configuré sur une ancienne valeur.
 Il faut régler la racine sur `/voltatrucks.online` et le startup file sur
 `dist/index.cjs`.
 
-Le bot Telegram n'est pas lancé par Replit ni par Plesk. Sur le VPS, copie le
-dépôt, crée l'utilisateur `telegrambot`, puis installe le service :
+Le bot Telegram n'est pas lancé par Replit. Il est lancé sur le **même VPS
+Plesk** avec Python et systemd. Depuis le terminal du serveur Plesk, installe
+le service :
 
 ```bash
-sudo mkdir -p /opt/lucky-jet-ai-bot
-sudo chown -R telegrambot:telegrambot /opt/lucky-jet-ai-bot
-cd /opt/lucky-jet-ai-bot
-sudo -u telegrambot git clone <URL_DU_DEPOT> .
-sudo -u telegrambot cp deployment/telegram-bot.env.example \
-  plesk-deployment/telegram-bot/.env
+sudo useradd --system --home /voltatrucks.online --shell /usr/sbin/nologin telegrambot || true
+sudo chown -R telegrambot:telegrambot /voltatrucks.online/plesk-deployment/telegram-bot
+sudo cp deployment/telegram-bot.env.example \
+  /voltatrucks.online/plesk-deployment/telegram-bot/.env
+sudo chmod 600 /voltatrucks.online/plesk-deployment/telegram-bot/.env
 sudo cp deployment/telegram-bot.service.example \
   /etc/systemd/system/telegram-bot.service
 sudo systemctl daemon-reload
@@ -124,11 +124,12 @@ sudo systemctl enable --now telegram-bot
 sudo systemctl status telegram-bot
 ```
 
-Modifie le chemin `/opt/lucky-jet-ai-bot` dans le fichier systemd si
-nécessaire. Remplis le fichier `.env` du VPS avec `BOT_TOKEN` et
-`SUPABASE_DATABASE_URL` ou `DATABASE_URL`. Le service crée automatiquement le
-virtualenv, installe les dépendances, vérifie Telegram, initialise PostgreSQL
-et démarre le polling.
+Si le compte système de l'abonnement Plesk doit être utilisé, remplace
+`telegrambot` par ce compte dans le fichier systemd et conserve les droits
+d'accès au dossier. Remplis le fichier `.env` sur Plesk avec `BOT_TOKEN` et
+`SUPABASE_DATABASE_URL` ou `DATABASE_URL`. Le service Python crée
+automatiquement le virtualenv, installe les dépendances, vérifie Telegram,
+initialise PostgreSQL et démarre le polling.
 
 Pour suivre les logs du bot :
 
@@ -145,7 +146,7 @@ npm run check:bot
 Pour vérifier uniquement les imports du bot sans le démarrer :
 
 ```text
-cd /opt/lucky-jet-ai-bot/plesk-deployment/telegram-bot
+cd /voltatrucks.online/plesk-deployment/telegram-bot
 python3 -c "import main; print('bot imports: ok')"
 ```
 
@@ -176,7 +177,7 @@ Après le **Pull → Deploy Now → Restart App** de Plesk, vérifie :
 https://TON-DOMAINE/api/healthz
 ```
 
-Puis redémarre le bot sur le VPS :
+Puis redémarre le bot sur le même serveur Plesk :
 
 ```bash
 sudo systemctl restart telegram-bot

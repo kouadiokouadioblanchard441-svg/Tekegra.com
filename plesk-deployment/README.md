@@ -11,9 +11,9 @@ contient :
 - `telegram-bot/.env.example` : variables du bot.
 
 Le panneau admin et l’API sont servis par **un seul processus Node.js**. Le
-bot Telegram est déployé séparément sur un VPS avec systemd, car sa version
-actuelle utilise aiogram et SQLAlchemy asynchrones. Plesk ne lance jamais le
-bot. Replit sert uniquement au développement et au build.
+bot Telegram Python/aiogram est un second service `systemd` sur **le même VPS
+qui héberge Plesk**. Il n'y a pas de VPS externe. Replit sert uniquement au
+développement et au build.
 
 ## Prérequis
 
@@ -85,12 +85,13 @@ Une réponse saine ressemble à :
 {"status":"ok","database":"ok"}
 ```
 
-## Déploiement du bot Telegram sur le VPS
+## Déploiement du bot Telegram sur le même VPS Plesk
 
-Le bot n'est pas lancé par Plesk. Il doit être lancé sur le VPS avec :
+Le bot n'est pas lancé par Replit. Il doit être lancé sur le même serveur Plesk
+avec Python/systemd :
 
 ```bash
-bash /opt/lucky-jet-ai-bot/plesk-deployment/telegram-bot/start.sh
+bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
 Le fichier `deployment/telegram-bot.service.example` fournit le service
@@ -103,9 +104,10 @@ BOT_TOKEN=<token fourni par BotFather>
 SUPABASE_DATABASE_URL=<URL PostgreSQL Supabase>
 ```
 
-`DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Les variables du VPS
-doivent être configurées dans `plesk-deployment/telegram-bot/.env` et ne
-doivent jamais être ajoutées à Git.
+`DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Les variables du bot
+doivent être configurées dans
+`/voltatrucks.online/plesk-deployment/telegram-bot/.env` et ne doivent jamais
+être ajoutées à Git.
 
 ## Mot de passe admin
 
@@ -122,7 +124,7 @@ Plesk une fois, puis remets la variable à `false`.
 - [ ] `SESSION_SECRET` générée avec au moins 32 caractères aléatoires.
 - [ ] `DOMAIN_URL` et `CORS_ORIGINS` limités au domaine public exact.
 - [ ] `BOT_TOKEN`, `ADMIN_ID` et l'URL PostgreSQL du bot sont renseignés dans
-      le fichier privé `.env` du VPS.
+      le fichier privé `.env` du même VPS Plesk.
 - [ ] `npm ci` terminé sans erreur.
 - [ ] `npm run deploy:check` confirme les bundles présents.
 - [ ] Startup file réglé sur `dist/index.cjs`.
@@ -131,8 +133,9 @@ Plesk une fois, puis remets la variable à `false`.
 - [ ] La page `/login` s’affiche après un redémarrage de l’application.
 - [ ] Le mot de passe admin est déjà présent sous la clé
       `bot_settings.admin_password_hash`.
-- [ ] Le bot démarre avec `systemd` sur le VPS et reçoit les mises à jour Telegram.
-- [ ] Les logs Node sont consultables dans Plesk et les logs bot avec
+- [ ] Le bot démarre avec `systemd` sur le même VPS Plesk et reçoit les mises à
+      jour Telegram.
+- [ ] Les logs Node sont consultables dans Plesk et les logs Python avec
       `journalctl -u telegram-bot`.
 - [ ] Les sauvegardes PostgreSQL et la rotation des logs sont activées.
 - [ ] Les fichiers `.env` et `node_modules/` ne sont pas publiés dans Git.
