@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.premium_service import PremiumService
 from bot.services.user_service import UserService
 from bot.services.settings_service import BotSettingsService
-from bot.keyboards.premium import premium_keyboard
+from bot.keyboards.premium import premium_keyboard, premium_signal_type_keyboard
 from bot.keyboards.main_menu import back_to_main_keyboard
 from bot.utils.message_cleaner import (
     delete_incoming_message,
@@ -34,6 +34,33 @@ async def _get_prices(session: AsyncSession) -> tuple[str, str]:
 
 
 async def show_premium(event: Message | CallbackQuery, session: AsyncSession | None = None):
+    if session is not None:
+        user_svc = UserService(session)
+        db_user = await user_svc.get_by_id(event.from_user.id)
+        if db_user and db_user.is_premium:
+            text = (
+                "⭐ *PREMIUM*\n"
+                f"{SEP}\n\n"
+                "Choisissez le type de signal :"
+            )
+            if isinstance(event, CallbackQuery):
+                await event.message.edit_text(
+                    text,
+                    parse_mode="Markdown",
+                    reply_markup=premium_signal_type_keyboard(),
+                )
+                await event.answer()
+            else:
+                await delete_incoming_message(event)
+                await send_tracked_message(
+                    event,
+                    event.from_user.id,
+                    text,
+                    parse_mode="Markdown",
+                    reply_markup=premium_signal_type_keyboard(),
+                )
+            return
+
     price_7, price_30 = ("5 594 F", "16 794 F")
     if session is not None:
         price_7, price_30 = await _get_prices(session)
