@@ -15,7 +15,6 @@ def main_menu_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         row1,
         [InlineKeyboardButton(text="Modifier la langue", callback_data="menu:language")],
-        [InlineKeyboardButton(text="⭐ Premium", callback_data="menu:premium")],
         [InlineKeyboardButton(text="GET SIGNAL", callback_data="menu:get_signal")],
     ])
 
