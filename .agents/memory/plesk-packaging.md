@@ -18,3 +18,14 @@ Keep `pip --no-user` in the virtualenv installer. The Plesk backend initializes
 
 The Node application's environment is not inherited by systemd; duplicate only
 the required variables when choosing the systemd alternative.
+
+The Plesk child process can exit during shell/virtualenv setup before Python
+starts; a parent-process "running" flag is not proof that Telegram polling is
+active. Keep startup-stage diagnostics separate from the process PID.
+
+**Why:** Production showed a live Node process while `start.sh` repeatedly
+exited before `main.py`, leaving Telegram completely unresponsive.
+
+**How to apply:** Treat `polling` as the only healthy bot state; expose
+shell-stage failures (`venv`, pip, configuration, Python launch) without
+including credentials, and inspect Plesk logs when the stage is unavailable.
