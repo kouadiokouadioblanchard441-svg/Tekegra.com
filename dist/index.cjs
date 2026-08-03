@@ -39185,10 +39185,12 @@ var router = (0, import_express.Router)();
 router.get("/healthz", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
-    res.json({
-      status: "ok",
+    const telegramBot = getTelegramBotRuntime();
+    const healthy = telegramBot.state === "running";
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? "ok" : "degraded",
       database: "ok",
-      telegramBot: getTelegramBotRuntime()
+      telegramBot
     });
   } catch {
     res.status(503).json({ status: "degraded", database: "unavailable" });
@@ -41619,7 +41621,10 @@ async function start() {
           `voltatrucks-telegram-bot-${process.pid}.json`
         )
       },
-      stdio: "inherit"
+      // Capture the child output in the Node/Plesk logs. Passenger can
+      // otherwise discard a short-lived child's stderr, leaving only an
+      // unhelpful exit code.
+      stdio: ["ignore", "pipe", "pipe"]
     });
     setTelegramBotRuntime({
       state: "starting",
@@ -41630,6 +41635,14 @@ async function start() {
       { pid: botProcess.pid, script: botStartScript },
       "Telegram bot started by the Plesk app"
     );
+    botProcess.stdout?.on("data", (chunk) => {
+      const message = String(chunk).trim();
+      if (message) logger.info({ pid: botProcess?.pid, output: message }, "Telegram bot stdout");
+    });
+    botProcess.stderr?.on("data", (chunk) => {
+      const message = String(chunk).trim();
+      if (message) logger.error({ pid: botProcess?.pid, output: message }, "Telegram bot stderr");
+    });
     botProcess.once("error", (error) => {
       setTelegramBotRuntime({
         state: "exited",

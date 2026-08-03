@@ -7,10 +7,12 @@ const router = Router();
 router.get("/healthz", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
-    res.json({
-      status: "ok",
+    const telegramBot = getTelegramBotRuntime();
+    const healthy = telegramBot.state === "running";
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? "ok" : "degraded",
       database: "ok",
-      telegramBot: getTelegramBotRuntime(),
+      telegramBot,
     });
   } catch {
     res.status(503).json({ status: "degraded", database: "unavailable" });
