@@ -28,6 +28,8 @@ export interface TelegramBotRuntime {
     botUsername?: string;
     botName?: string;
     error?: string;
+    stage?: string;
+    exitCode?: number;
   };
 }
 

@@ -12,6 +12,7 @@ import os
 import sys
 import tempfile
 from datetime import datetime, timezone
+from loguru import logger
 
 # Ensure the telegram-bot directory is on sys.path so all internal imports work.
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -49,7 +50,6 @@ def _write_status(status: str, **details) -> None:
         logger.warning(f"Could not write bot status: {error}")
 
 
-from loguru import logger
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
