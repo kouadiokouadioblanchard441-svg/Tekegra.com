@@ -364,7 +364,7 @@ def generate_aviator_signal(is_premium: bool = False) -> dict:
 
 # ─── Mines ────────────────────────────────────────────────────────────────────
 
-def generate_mines_signal(is_premium: bool = False, cote_type: str = "auto") -> dict:
+def generate_mines_signal(is_premium: bool = False, star_mode: str = "auto") -> dict:
     heure = _get_signal_time()
     if is_premium:
         mines_options = [1, 2, 3, 5, 10, 15]
@@ -388,7 +388,18 @@ def generate_mines_signal(is_premium: bool = False, cote_type: str = "auto") -> 
     # Probabilité théorique d'une case sûre (affichée en %)
     safe_probability = round((safe_tiles / 25) * 100)
 
-    grid = _generate_mines_grid(mines_count=mines, is_premium=is_premium)
+    if is_premium and star_mode == "petite":
+        requested_stars = random.randint(3, 5)
+    elif is_premium and star_mode == "grosse":
+        requested_stars = random.randint(6, 10)
+    else:
+        requested_stars = 5 if is_premium else 3
+
+    grid, star_count = _generate_mines_grid(
+        mines_count=mines,
+        is_premium=is_premium,
+        star_count=requested_stars,
+    )
 
     return {
         "heure": heure,
@@ -399,7 +410,8 @@ def generate_mines_signal(is_premium: bool = False, cote_type: str = "auto") -> 
         "risque": risque,
         "countdown": countdown,
         "is_premium": is_premium,
-        "cote_type": cote_type,
+        "star_mode": star_mode,
+        "star_count": star_count,
         "grid": grid,
         "mine_positions": [
             i for i, cell in enumerate(sum(grid, []))
@@ -414,7 +426,11 @@ def generate_mines_signal(is_premium: bool = False, cote_type: str = "auto") -> 
     }
 
 
-def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
+def _generate_mines_grid(
+    mines_count: int,
+    is_premium: bool,
+    star_count: int | None = None,
+) -> tuple[list[list[str]], int]:
     """Grille 5×5 avec positions uniques, anti-clustering pour premium."""
     GRID = 25
     positions = list(range(GRID))
@@ -423,8 +439,12 @@ def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
     mine_positions = set(positions[:mines_count])
     safe_positions = positions[mines_count:]
 
-    # Premium : jusqu'à 5 cases révélées, gratuit : 3
-    highlight_count = min(len(safe_positions), 5 if is_premium else 3)
+    # Premium Petite : 3–5 étoiles, Premium Grosse : 6–10 étoiles.
+    # Gratuit conserve son fonctionnement actuel avec 3 étoiles.
+    highlight_count = min(
+        len(safe_positions),
+        star_count if star_count is not None else (5 if is_premium else 3),
+    )
 
     # Anti-clustering : on préfère des cases révélées bien espacées
     if is_premium and len(safe_positions) >= 5:
@@ -441,7 +461,7 @@ def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
         else:
             flat.append("🟦")
 
-    return [flat[r * 5: r * 5 + 5] for r in range(5)]
+    return [flat[r * 5: r * 5 + 5] for r in range(5)], highlight_count
 
 
 def _spread_highlights(safe_positions: list, count: int) -> set:

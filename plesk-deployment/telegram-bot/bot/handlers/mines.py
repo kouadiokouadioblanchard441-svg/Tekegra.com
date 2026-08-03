@@ -58,13 +58,17 @@ def _grid_header(signal: dict, is_premium: bool, remaining: int | None = None) -
         grid_text,
         "",
     ]
-    if is_premium and signal.get("cote_type") in ("petite", "grosse"):
+    if is_premium and signal.get("star_mode") in ("petite", "grosse"):
         mode_label = (
-            "🎯 Petite Côte"
-            if signal["cote_type"] == "petite"
-            else "🚀 Grosse Côte"
+            "🎯 Petite"
+            if signal["star_mode"] == "petite"
+            else "🚀 Grosse"
         )
-        lines.insert(5, f"|●>*TYPE DE COTE : {mode_label}*")
+        lines.insert(
+            5,
+            f"|●>*MODE : {mode_label} — "
+            f"{signal.get('star_count', 0)} étoiles* ⭐",
+        )
     if remaining is not None and not is_premium:
         lines.append(f"🎯 Signaux gratuits restants : *{remaining}/{settings.FREE_SIGNALS_TOTAL}*")
     lines.append(f"🎁 code promo: *{settings.BOT_PROMO_CODE}*")
@@ -76,7 +80,7 @@ async def _send_mines_signal(
     signal: dict,
     is_premium: bool,
     remaining: int | None = None,
-    cote_type: str = "auto",
+    star_mode: str = "auto",
 ) -> None:
     """Delete trigger message, send loading, then edit to the final mines grid."""
     # The previous response can be a menu or an older signal. Remove it before
@@ -101,7 +105,7 @@ async def _send_mines_signal(
         grid=signal.get("grid", []),
         is_premium=is_premium,
         affiliate_link=settings.BOT_AFFILIATE_LINK,
-        cote_type=signal.get("cote_type", cote_type),
+        star_mode=signal.get("star_mode", star_mode),
     )
     await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
 
@@ -158,7 +162,7 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
         await call.message.edit_text(
             "💣 *MINES PREMIUM*\n\n"
             f"{SEP}\n\n"
-            "Choisissez le type de côte :",
+            "Choisissez le mode d'étoiles :",
             parse_mode="Markdown",
             reply_markup=mines_premium_type_keyboard(),
         )
@@ -274,7 +278,7 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
     await call.message.edit_text(
         "💣 *MINES PREMIUM*\n\n"
         f"{SEP}\n\n"
-        "Choisissez le type de côte :",
+        "Choisissez le mode d'étoiles :",
         parse_mode="Markdown",
         reply_markup=mines_premium_type_keyboard(),
     )
@@ -285,9 +289,9 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data.startswith("mines:signal_premium:"))
 async def cb_mines_premium_type(call: CallbackQuery, session: AsyncSession):
-    cote_type = call.data.split(":")[-1]
-    if cote_type not in ("petite", "grosse"):
-        await call.answer("❌ Type de côte invalide", show_alert=True)
+    star_mode = call.data.split(":")[-1]
+    if star_mode not in ("petite", "grosse"):
+        await call.answer("❌ Mode d'étoiles invalide", show_alert=True)
         return
 
     user = call.from_user
@@ -306,13 +310,13 @@ async def cb_mines_premium_type(call: CallbackQuery, session: AsyncSession):
 
     await delete_previous_signal(user.id)
 
-    signal = generate_mines_signal(is_premium=True, cote_type=cote_type)
+    signal = generate_mines_signal(is_premium=True, star_mode=star_mode)
     await svc.consume_premium_signal(db_user)
     await svc.save_signal(user.id, "mines", signal, is_premium=True)
     await _send_mines_signal(call, signal, is_premium=True)
     await call.answer("⭐ Grille Premium Mines générée !")
     logger.info(
-        f"Premium Mines {cote_type} grid for user {user.id} — "
+        f"Premium Mines {star_mode} grid for user {user.id} — "
         f"{signal['mines']} mines"
     )
 
@@ -374,12 +378,12 @@ async def cb_mines_history(call: CallbackQuery, session: AsyncSession):
             data = r.signal_data
             badge = "⭐" if r.is_premium else "🎯"
             ts = r.created_at.strftime("%d/%m %H:%M")
-            cote_type = data.get("cote_type")
+            star_mode = data.get("star_mode")
             mode_label = (
-                " | 🎯 Petite Côte"
-                if cote_type == "petite"
-                else " | 🚀 Grosse Côte"
-                if cote_type == "grosse"
+                f" | 🎯 Petite — {data.get('star_count', '?')} étoiles"
+                if star_mode == "petite"
+                else f" | 🚀 Grosse — {data.get('star_count', '?')} étoiles"
+                if star_mode == "grosse"
                 else ""
             )
             lines.append(
