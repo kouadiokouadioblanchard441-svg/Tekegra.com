@@ -22,7 +22,7 @@ Les commandes doivent toutes réussir. Le build génère et met à jour les
 artefacts versionnés :
 
 - `plesk-deployment/client-dist/`
-- `plesk-deployment/server/dist/`
+- `plesk-deployment/dist/index.cjs`
 
 Ensuite, depuis la racine du dépôt :
 
@@ -37,8 +37,8 @@ Ne pousse jamais un fichier `.env`. Les seuls fichiers d'environnement
 versionnés sont les `.env.example`.
 
 Aucune archive ZIP n'est nécessaire pour ce déploiement. Les dossiers
-`client-dist/` et `server/dist/` sont compilés puis versionnés directement dans
-GitHub.
+`client-dist/` et `dist/index.cjs` sont compilés puis versionnés directement
+dans GitHub.
 
 ## Configuration Plesk une seule fois
 
@@ -47,7 +47,7 @@ Dans **Websites & Domains → Node.js** :
 | Paramètre | Valeur |
 |---|---|
 | Application root | `plesk-deployment` |
-| Application startup file | `server/dist/index.js` |
+| Application startup file | `dist/index.cjs` |
 | Node.js version | 20 ou supérieure |
 | Application mode | Production |
 
@@ -86,9 +86,9 @@ idempotente et ne supprime pas les données.
 
 ## Si Plesk ne reconstruit pas automatiquement
 
-Ce n'est pas bloquant : les bundles `client-dist/` et `server/dist/` sont déjà
+Ce n'est pas bloquant : les bundles `client-dist/` et `dist/index.cjs` sont déjà
 committés dans Git. Après **Pull + Deploy Now + Restart App**, Plesk peut
-démarrer directement `server/dist/index.js`.
+démarrer directement `dist/index.cjs`.
 
 Pour vérifier manuellement dans le terminal Plesk :
 
@@ -100,13 +100,13 @@ npm run deploy:check
 Le chemin complet du fichier de démarrage sera donc :
 
 ```text
-/voltatrucks.online/plesk-deployment/server/dist/index.js
+/voltatrucks.online/plesk-deployment/dist/index.cjs
 ```
 
 Si Plesk affiche `/voltatrucks.online/app.js`, l'**Application root** ou le
 champ **Application startup file** est configuré sur une ancienne valeur.
 Il faut régler la racine sur `/voltatrucks.online/plesk-deployment` et le
-startup file sur `server/dist/index.js`.
+startup file sur `dist/index.cjs`.
 
 ```bash
 cd plesk-deployment/telegram-bot

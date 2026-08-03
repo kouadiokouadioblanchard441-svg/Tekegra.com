@@ -75,11 +75,3 @@ export async function runMigrations(): Promise<void> {
   }
   logger.info({ statements: statements.length }, "Database migrations complete");
 }
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  try {
-    await runMigrations();
-  } finally {
-    await pool.end();
-  }
-}

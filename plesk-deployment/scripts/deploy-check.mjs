@@ -2,8 +2,7 @@ import { access } from "node:fs/promises";
 
 const requiredFiles = [
   "client-dist/index.html",
-  "server/dist/index.js",
-  "server/dist/migrate.js",
+  "dist/index.cjs",
   "telegram-bot/main.py",
   "telegram-bot/start.sh",
   "telegram-bot/requirements.txt",

@@ -8,21 +8,29 @@ if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
   throw new Error("PORT must be a valid TCP port.");
 }
 
-await runMigrations();
-await pool.query("SELECT 1");
+async function start(): Promise<void> {
+  await runMigrations();
+  await pool.query("SELECT 1");
 
-const server = app.listen(port, "0.0.0.0", () => {
-  logger.info({ port }, "Plesk production server listening");
-});
-
-async function shutdown(signal: string): Promise<void> {
-  logger.info({ signal }, "Shutdown requested");
-  server.close(async () => {
-    await closeDatabase();
-    process.exit(0);
+  const server = app.listen(port, "0.0.0.0", () => {
+    logger.info({ port }, "Plesk production server listening");
   });
-  setTimeout(() => process.exit(1), 10_000).unref();
+
+  async function shutdown(signal: string): Promise<void> {
+    logger.info({ signal }, "Shutdown requested");
+    server.close(async () => {
+      await closeDatabase();
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10_000).unref();
+  }
+
+  process.once("SIGTERM", () => void shutdown("SIGTERM"));
+  process.once("SIGINT", () => void shutdown("SIGINT"));
 }
 
-process.on("SIGTERM", () => void shutdown("SIGTERM"));
-process.on("SIGINT", () => void shutdown("SIGINT"));
+void start().catch(async (error: unknown) => {
+  logger.error({ err: error }, "Plesk production server failed to start");
+  await closeDatabase().catch(() => undefined);
+  process.exit(1);
+});

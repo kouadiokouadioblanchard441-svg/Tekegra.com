@@ -13,9 +13,9 @@ out-tsc
 !/plesk-deployment/
 !/plesk-deployment/client-dist/
 !/plesk-deployment/client-dist/**
+!/plesk-deployment/dist/
+!/plesk-deployment/dist/**
 !/plesk-deployment/server/
-!/plesk-deployment/server/dist/
-!/plesk-deployment/server/dist/**
 
 # dependencies
 node_modules

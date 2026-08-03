@@ -1,5 +1,4 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import express, { type Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -9,8 +8,13 @@ import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 
 const app: Express = express();
-const root = path.dirname(fileURLToPath(import.meta.url));
-const clientDist = path.resolve(root, "..", "client-dist");
+// The production bundle is plesk-deployment/dist/index.cjs. Resolve the
+// frontend relative to the launched entrypoint so the same Express process
+// serves both the API and the compiled React application.
+const entrypointDir = process.argv[1]
+  ? path.dirname(path.resolve(process.argv[1]))
+  : process.cwd();
+const clientDist = path.resolve(entrypointDir, "..", "client-dist");
 
 const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.DOMAIN_URL ?? "")
   .split(",")

@@ -4,7 +4,7 @@ Ce dossier est une variante autonome pour un hébergement Plesk Linux. Il
 contient :
 
 - `client-dist/` : panneau admin React déjà compilé ;
-- `server/dist/` : serveur Node.js compilé ;
+- `dist/index.cjs` : build final CommonJS du serveur Node.js ;
 - `telegram-bot/` : bot Telegram séparé, conservé en Python/aiogram ;
 - `database/` : emplacement réservé aux migrations SQL complémentaires ;
 - `.env.example` : variables du serveur Node ;
@@ -26,7 +26,7 @@ aiogram et SQLAlchemy asynchrones.
 
 1. Dans Plesk, créer une application Node.js pour le domaine.
 2. Choisir le dossier `plesk-deployment` comme **Application root**.
-3. Choisir `server/dist/index.js` comme **Application startup file**.
+3. Choisir `dist/index.cjs` comme **Application startup file**.
 4. Définir les variables d’environnement de `.env.example` dans Plesk
    (ne jamais téléverser un fichier `.env` contenant des secrets).
 5. Dans Plesk, activer **NPM install** si l’option est proposée.
@@ -37,7 +37,7 @@ npm ci --omit=dev
 npm run deploy:check
 ```
 
-Les bundles de production `client-dist/` et `server/dist/` sont versionnés dans
+Les bundles de production `client-dist/` et `dist/index.cjs` sont versionnés dans
 Git pour que **Pull + Deploy Now**, puis **Restart App**, fonctionne sans
 dépendre d’un hook de build Plesk. Si le code source a été modifié localement,
 reconstruire avant le push :
@@ -116,7 +116,7 @@ Python ; configurez donc `BOT_TOKEN` et `DATABASE_URL` ou
       privées Plesk.
 - [ ] `npm ci` terminé sans erreur.
 - [ ] `npm run deploy:check` confirme les bundles présents.
-- [ ] Startup file réglé sur `server/dist/index.js`.
+- [ ] Startup file réglé sur `dist/index.cjs`.
 - [ ] Le port de l’application est celui fourni par Plesk via `PORT`.
 - [ ] `GET /api/healthz` retourne `database: ok`.
 - [ ] La page `/login` s’affiche après un redémarrage de l’application.
@@ -126,13 +126,13 @@ Python ; configurez donc `BOT_TOKEN` et `DATABASE_URL` ou
 - [ ] Les logs Node et bot sont consultables dans Plesk.
 - [ ] Les sauvegardes PostgreSQL et la rotation des logs sont activées.
 - [ ] Les fichiers `.env` et `node_modules/` ne sont pas publiés dans Git.
-- [ ] Les bundles `server/dist/` et `client-dist/` sont présents dans Git
+- [ ] Les bundles `dist/index.cjs` et `client-dist/` sont présents dans Git
       pour le déploiement Pull + Deploy Now.
 
 ## Flux GitHub → Plesk
 
 Aucune archive ZIP n’est nécessaire. Le build produit les dossiers
-`client-dist/` et `server/dist/`, qui sont versionnés dans GitHub. Après le
+`client-dist/` et `dist/index.cjs`, qui sont versionnés dans GitHub. Après le
 push, Plesk utilise **Pull → Deploy Now → Restart App**.
 
 Le contrôle complet du package, y compris les imports Python du bot, est :
