@@ -46,10 +46,15 @@ async def _notify_admins_new_user(message: Message, db_user) -> None:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession):
+    user = message.from_user
+    logger.info(
+        "Received /start from telegram_id={} username=@{}",
+        user.id,
+        user.username,
+    )
     # Keep the chat clean: remove the user's incoming /start command.
     await delete_incoming_message(message)
 
-    user = message.from_user
     svc = UserService(session)
     db_user = await svc.get_or_create(
         telegram_id=user.id,

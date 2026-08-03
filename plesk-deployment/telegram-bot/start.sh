@@ -10,16 +10,38 @@ CURRENT_STAGE="boot"
 
 select_python() {
   local candidate resolved
+  local -a candidate_list=()
 
   if [[ -n "${BOT_PYTHON:-}" ]]; then
     candidate_list=("$BOT_PYTHON")
   else
-    # Plesk servers can expose several Python binaries. Prefer a supported
-    # version instead of blindly trusting `python3`, which may be legacy.
-    candidate_list=(python3.12 python3.11 python3.10 python3.9 python3)
+    # Plesk can keep supported Python versions outside the normal PATH.
+    # Prefer explicit Plesk/system locations before the generic python3.
+    candidate_list=(
+      /opt/plesk/python/*/bin/python3.12
+      /opt/plesk/python/*/bin/python3.11
+      /opt/plesk/python/*/bin/python3.10
+      /opt/plesk/python/*/bin/python3.9
+      /opt/plesk/python/*/bin/python
+      /usr/local/bin/python3.12
+      /usr/local/bin/python3.11
+      /usr/local/bin/python3.10
+      /usr/local/bin/python3.9
+      /usr/bin/python3.12
+      /usr/bin/python3.11
+      /usr/bin/python3.10
+      /usr/bin/python3.9
+      python3.12
+      python3.11
+      python3.10
+      python3.9
+      python3
+    )
   fi
 
   for candidate in "${candidate_list[@]}"; do
+    # Keep unmatched globs as literal strings, then skip them below.
+    [[ "$candidate" == */* && "$candidate" == *"*"* ]] && continue
     if [[ "$candidate" == */* ]]; then
       resolved="$candidate"
     else

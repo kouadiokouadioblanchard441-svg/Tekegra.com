@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import sys
 import tempfile
@@ -65,9 +66,19 @@ from bot.middlewares import (
 from config import settings
 from database.db import init_db
 
+logging.basicConfig(
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+
 
 async def main() -> None:
     _write_status("starting")
+    logger.info(
+        "Bot process starting: pid={} python={}",
+        os.getpid(),
+        sys.version.split()[0],
+    )
     if not settings.BOT_TOKEN:
         _write_status("failed", error="BOT_TOKEN is not configured")
         logger.error("BOT_TOKEN is not set in the bot process environment.")
@@ -90,6 +101,11 @@ async def main() -> None:
 
     try:
         bot_info = await bot.get_me()
+        logger.info(
+            "Telegram getMe succeeded: bot_id={} username=@{}",
+            bot_info.id,
+            bot_info.username,
+        )
         _write_status(
             "telegram_verified",
             botId=bot_info.id,
@@ -125,9 +141,19 @@ async def main() -> None:
 
         # Drop any updates that arrived while the bot was offline so we don't
         # replay stale messages on startup.
+        webhook_info = await bot.get_webhook_info()
+        logger.info(
+            "Telegram webhook status: configured={} pending_updates={}",
+            bool(webhook_info.url),
+            webhook_info.pending_update_count,
+        )
         await bot.delete_webhook(drop_pending_updates=True)
+        logger.info("Telegram webhook deleted; polling mode is enabled")
 
-        logger.info("Starting polling — bot: %s", settings.BOT_NAME)
+        logger.info(
+            "Main router registered: /start handler and callback handlers are ready"
+        )
+        logger.info("Starting polling — bot: {}", settings.BOT_NAME)
         _write_status(
             "polling",
             botId=bot_info.id,
