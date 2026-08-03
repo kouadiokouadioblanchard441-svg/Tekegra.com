@@ -127,14 +127,35 @@ Le contrôle de build équivalent depuis `plesk-deployment/` est :
 npm run check:bot
 ```
 
-Pour Supervisor ou un gestionnaire de processus Plesk, utiliser cette commande
-avec `plesk-deployment` comme répertoire de travail :
+Le démarrage Plesk de `dist/index.cjs` lance automatiquement le bot Python
+comme processus enfant séparé. Il hérite donc des variables de l'application
+Node et ne nécessite pas un deuxième service Supervisor.
+
+Pour un diagnostic manuel, utiliser cette commande :
 
 ```bash
 bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
-Le processus Python doit recevoir `BOT_TOKEN` et
-`DATABASE_URL` ou `SUPABASE_DATABASE_URL` dans son propre environnement. Les
-variables configurées uniquement dans l'application Node.js Plesk ne sont pas
-forcément transmises à Supervisor.
+Dans les variables d'environnement de l'application Node Plesk, vérifier que
+ces variables sont présentes :
+
+```text
+BOT_TOKEN=<token fourni par BotFather>
+SUPABASE_DATABASE_URL=<URL PostgreSQL Supabase>
+```
+
+`DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Le script accepte aussi
+un fichier local
+`/voltatrucks.online/plesk-deployment/telegram-bot/.env` (non versionné) lors
+d'un lancement manuel.
+
+Si un processus Python Supervisor existe déjà, ajouter
+`TELEGRAM_BOT_AUTOSTART=false` dans l'application Node pour éviter deux
+pollings Telegram en parallèle. Il ne faut jamais lancer les deux modes en
+même temps : Telegram refuserait le deuxième polling avec une erreur de conflit.
+
+Après avoir vérifié les variables, effectuer **Pull → Deploy Now → Restart
+App**. Les logs doivent ensuite afficher successivement le démarrage du
+processus Telegram, une connexion Telegram vérifiée, l'initialisation
+PostgreSQL, puis `Starting polling`.

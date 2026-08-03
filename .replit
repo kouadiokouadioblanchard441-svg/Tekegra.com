@@ -26,7 +26,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/telegram-bot && pip install -r requirements.txt -q && python main.py"
+args = "bash plesk-deployment/telegram-bot/start.sh"
 
 [workflows.workflow.metadata]
 outputType = "console"

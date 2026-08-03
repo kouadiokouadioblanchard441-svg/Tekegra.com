@@ -1,3 +1,6 @@
+import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import app from "./app.js";
 import { closeDatabase, pool } from "./db.js";
 import { logger } from "./lib/logger.js";
@@ -16,8 +19,45 @@ async function start(): Promise<void> {
     logger.info({ port }, "Plesk production server listening");
   });
 
+  let botProcess: ChildProcess | undefined;
+  const botAutostart = process.env.TELEGRAM_BOT_AUTOSTART !== "false";
+  if (botAutostart) {
+    const entrypointDir = path.dirname(path.resolve(process.argv[1] ?? process.cwd()));
+    const botStartScript = [
+      path.resolve(entrypointDir, "..", "plesk-deployment", "telegram-bot", "start.sh"),
+      path.resolve(entrypointDir, "..", "telegram-bot", "start.sh"),
+      path.resolve(process.cwd(), "plesk-deployment", "telegram-bot", "start.sh"),
+    ].find((candidate) => existsSync(candidate));
+
+    if (!botStartScript) {
+      logger.error("Telegram bot start script was not found");
+    } else {
+      botProcess = spawn("bash", [botStartScript], {
+        cwd: path.dirname(botStartScript),
+        env: process.env,
+        stdio: "inherit",
+      });
+      logger.info({ pid: botProcess.pid, botStartScript }, "Telegram bot process started");
+      botProcess.once("error", (error) => {
+        logger.error({ err: error }, "Telegram bot process could not be started");
+      });
+      botProcess.once("exit", (code, signal) => {
+        if (code === 0) {
+          logger.info("Telegram bot process stopped");
+        } else {
+          logger.error({ code, signal }, "Telegram bot process exited unexpectedly");
+        }
+      });
+    }
+  } else {
+    logger.info("Telegram bot autostart disabled; run the Python service separately");
+  }
+
   async function shutdown(signal: string): Promise<void> {
     logger.info({ signal }, "Shutdown requested");
+    if (botProcess && !botProcess.killed) {
+      botProcess.kill("SIGTERM");
+    }
     server.close(async () => {
       await closeDatabase();
       process.exit(0);

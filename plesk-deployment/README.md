@@ -11,8 +11,9 @@ contient :
 - `telegram-bot/.env.example` : variables du bot.
 
 Le panneau admin et l’API sont servis par **un seul processus Node.js**. Le
-bot Telegram doit rester un second processus, car sa version actuelle utilise
-aiogram et SQLAlchemy asynchrones.
+bot Telegram reste un second processus Python, car sa version actuelle utilise
+aiogram et SQLAlchemy asynchrones. Le serveur Node Plesk le démarre
+automatiquement afin qu’il hérite des mêmes variables d’environnement.
 
 ## Prérequis
 
@@ -57,7 +58,8 @@ npm start
 ```
 
 Le démarrage exécute les migrations PostgreSQL idempotentes avant d’ouvrir le
-port. Il ne supprime jamais de table et ne remplace jamais de données.
+port, puis lance le bot Python séparé avec le même environnement. Il ne
+supprime jamais de table et ne remplace jamais de données.
 
 ## Configuration PostgreSQL
 
@@ -91,19 +93,28 @@ Le bot est un service séparé. Depuis `telegram-bot/` :
 bash start.sh
 ```
 
-Dans Plesk, utiliser le gestionnaire de processus disponible
-(Node.js application pour le serveur, Supervisor/systemd ou une extension
-Plesk pour le bot). Ne lancez pas le bot dans le même processus que Node.
-La commande recommandée est :
+Le bot est lancé automatiquement par `npm start` comme processus Python enfant.
+La commande manuelle ci-dessous est utile uniquement pour un diagnostic :
 
 ```bash
 bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
 Le script crée automatiquement `telegram-bot/.venv`, installe les dépendances
-et lance `main.py`. Il utilise les variables d'environnement du processus
-Python ; configurez donc `BOT_TOKEN` et `DATABASE_URL` ou
-`SUPABASE_DATABASE_URL` dans ce processus également.
+et lance `main.py`. Comme il est lancé par Node, il reçoit directement les
+variables déjà configurées dans l'application Plesk. Un fichier local
+`telegram-bot/.env` peut aussi être utilisé pour un lancement manuel, mais il
+ne doit jamais être ajouté à Git.
+
+Si un Supervisor Plesk lance déjà le bot séparément, désactiver le lancement
+automatique dans l'application Node avec :
+
+```text
+TELEGRAM_BOT_AUTOSTART=false
+```
+
+Il ne faut jamais lancer les deux modes en même temps : Telegram refuserait
+le deuxième polling avec une erreur de conflit.
 
 ## Checklist de mise en production
 
