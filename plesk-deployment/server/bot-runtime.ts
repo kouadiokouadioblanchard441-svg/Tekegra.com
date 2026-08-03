@@ -43,12 +43,15 @@ export function setTelegramBotRuntime(
 
 export function getTelegramBotRuntime(): TelegramBotRuntime {
   let botStatus = runtime.botStatus;
-  if (runtime.statusFile && runtime.pid) {
+  if (runtime.statusFile) {
     try {
       const parsed = JSON.parse(
         readFileSync(runtime.statusFile, "utf8"),
       ) as TelegramBotRuntime["botStatus"];
-      if (parsed?.pid === runtime.pid) {
+      // Keep the last shell/Python startup result visible after the child
+      // exits. The parent clears runtime.pid in its exit handler, but the
+      // status file is exactly what explains a pre-polling failure.
+      if (parsed && (!runtime.pid || parsed.pid === runtime.pid)) {
         botStatus = parsed;
       }
     } catch {

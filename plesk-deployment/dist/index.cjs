@@ -39160,12 +39160,12 @@ function setTelegramBotRuntime(update) {
 }
 function getTelegramBotRuntime() {
   let botStatus = runtime.botStatus;
-  if (runtime.statusFile && runtime.pid) {
+  if (runtime.statusFile) {
     try {
       const parsed = JSON.parse(
         (0, import_node_fs.readFileSync)(runtime.statusFile, "utf8")
       );
-      if (parsed?.pid === runtime.pid) {
+      if (parsed && (!runtime.pid || parsed.pid === runtime.pid)) {
         botStatus = parsed;
       }
     } catch {
