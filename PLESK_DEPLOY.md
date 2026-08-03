@@ -126,10 +126,16 @@ sudo systemctl status telegram-bot
 
 Si le compte système de l'abonnement Plesk doit être utilisé, remplace
 `telegrambot` par ce compte dans le fichier systemd et conserve les droits
-d'accès au dossier. Remplis le fichier `.env` sur Plesk avec `BOT_TOKEN` et
-`SUPABASE_DATABASE_URL` ou `DATABASE_URL`. Le service Python crée
-automatiquement le virtualenv, installe les dépendances, vérifie Telegram,
-initialise PostgreSQL et démarre le polling.
+d'accès au dossier. Remplis le fichier privé
+`/voltatrucks.online/plesk-deployment/telegram-bot/.env` avec `BOT_TOKEN` et
+`SUPABASE_DATABASE_URL` ou `DATABASE_URL`.
+
+Les variables de l'application Node.js Plesk ne sont pas automatiquement
+héritées par le service systemd Python. Le même `BOT_TOKEN` doit donc être
+configuré dans l'application Node pour les broadcasts API et dans le `.env`
+privé du bot pour le polling. Ne mets jamais le token dans le code ou GitHub.
+Le service Python crée automatiquement le virtualenv, installe les
+dépendances, vérifie Telegram, initialise PostgreSQL et démarre le polling.
 
 Pour suivre les logs du bot :
 

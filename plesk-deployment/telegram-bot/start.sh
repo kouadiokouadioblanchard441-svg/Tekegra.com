@@ -17,8 +17,10 @@ fi
 "$VENV/bin/python" -m pip install --no-user --quiet --upgrade pip
 "$VENV/bin/python" -m pip install --no-user --quiet -r "$BOT_ROOT/requirements.txt"
 
-# Validate the configuration before starting polling.  Plesk often runs this
-# script through Supervisor with a different environment from the Node app.
+# Validate the configuration before starting polling. The Python systemd
+# service does not inherit the environment of the separate Plesk Node.js app,
+# so BOT_TOKEN and the database URL must be provided by systemd's
+# EnvironmentFile or this package's private .env file.
 # Keep the values themselves out of logs; only report missing variable names.
 "$VENV/bin/python" - <<'PY'
 from config import settings
@@ -33,8 +35,8 @@ if missing:
     raise SystemExit(
         "Telegram bot configuration is incomplete. "
         "Missing: " + ", ".join(missing) +
-        ". Configure these variables in the Plesk application environment "
-        "or create telegram-bot/.env."
+        ". Configure these variables in "
+        "/voltatrucks.online/plesk-deployment/telegram-bot/.env or systemd."
     )
 PY
 

@@ -34,6 +34,9 @@ configurées sur ce même serveur Plesk.
 Les secrets éventuellement présents dans Replit servent uniquement aux tests
 et au développement. La production utilise les variables configurées dans
 Plesk pour le panel/API et dans le service Python du même VPS Plesk.
+Le service Python `systemd` ne reçoit pas automatiquement les variables de
+l'application Node Plesk : son `BOT_TOKEN` et son URL PostgreSQL doivent aussi
+être présents dans `/voltatrucks.online/plesk-deployment/telegram-bot/.env`.
 
 | Variable | Description |
 |----------|-------------|

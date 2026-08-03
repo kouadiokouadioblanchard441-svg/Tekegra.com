@@ -16,3 +16,7 @@ bot's `BOT_TOKEN` and `DATABASE_URL`/`SUPABASE_DATABASE_URL` in
 `/voltatrucks.online/plesk-deployment/telegram-bot/.env`. Keep `pip --no-user`
 in the virtualenv installer. The Plesk backend initializes
 `bot_settings.admin_password_hash` from `ADMIN_PASSWORD` when configured.
+
+The Node application's Plesk environment is not inherited by the separate
+systemd Python service; duplicate only the required runtime variables in the
+bot's private EnvironmentFile.

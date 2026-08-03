@@ -109,6 +109,11 @@ doivent être configurées dans
 `/voltatrucks.online/plesk-deployment/telegram-bot/.env` et ne doivent jamais
 être ajoutées à Git.
 
+Attention : les variables définies dans l'application Node.js de Plesk ne sont
+pas automatiquement transmises au service `systemd` Python. Configure donc
+`BOT_TOKEN` et l'URL PostgreSQL dans le `.env` privé du bot, même si `BOT_TOKEN`
+est également configuré dans l'application Node pour les broadcasts API.
+
 ## Mot de passe admin
 
 Configure `ADMIN_PASSWORD` dans les variables Node.js de Plesk. Au démarrage,
