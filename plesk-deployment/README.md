@@ -111,6 +111,14 @@ dans l'application Node Plesk sont transmises au bot. Le fichier privé
 `/voltatrucks.online/plesk-deployment/telegram-bot/.env` peut aussi être utilisé
 et ne doit jamais être ajouté à Git.
 
+Le code du bot utilise la syntaxe Python 3.10 (`X | Y`) et nécessite donc
+Python 3.10 ou supérieur. Si Plesk installe Python 3.10+ hors du `PATH`, définis
+`BOT_PYTHON` avec le chemin complet vers l'interpréteur, par exemple :
+
+```text
+BOT_PYTHON=/opt/plesk/python/3.12/bin/python3
+```
+
 Si tu choisis systemd au lieu de l'autostart Node, définis
 `TELEGRAM_BOT_AUTOSTART=false` dans Plesk et configure alors les variables dans
 le `EnvironmentFile` du service systemd. N'utilise pas les deux méthodes en

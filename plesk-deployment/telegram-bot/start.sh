@@ -21,21 +21,25 @@ select_python() {
       /opt/plesk/python/*/bin/python3.12
       /opt/plesk/python/*/bin/python3.11
       /opt/plesk/python/*/bin/python3.10
-      /opt/plesk/python/*/bin/python3.9
+      /opt/plesk/python/*/bin/python3
       /opt/plesk/python/*/bin/python
       /usr/local/bin/python3.12
       /usr/local/bin/python3.11
       /usr/local/bin/python3.10
-      /usr/local/bin/python3.9
+      /usr/local/bin/python3
+      /usr/local/bin/python
       /usr/bin/python3.12
       /usr/bin/python3.11
       /usr/bin/python3.10
-      /usr/bin/python3.9
+      /usr/bin/python3
+      /usr/bin/python
+      /usr/local/psa/admin/bin/python3
+      /usr/local/psa/admin/bin/python
       python3.12
       python3.11
       python3.10
-      python3.9
       python3
+      python
     )
   fi
 

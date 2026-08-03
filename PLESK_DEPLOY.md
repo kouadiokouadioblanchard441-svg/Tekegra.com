@@ -62,6 +62,14 @@ N'active pas en même temps le service systemd `telegram-bot`, sinon deux
 processus feront du polling avec le même token. Utilise systemd uniquement si
 tu définis `TELEGRAM_BOT_AUTOSTART=false`.
 
+Le bot nécessite Python 3.10 ou supérieur. Si Plesk installe cet interpréteur
+hors du `PATH`, ajoute `BOT_PYTHON` dans les variables de l'application Node,
+avec le chemin complet vers Python, par exemple :
+
+```text
+BOT_PYTHON=/opt/plesk/python/3.12/bin/python3
+```
+
 Si Plesk propose l'installation NPM, elle peut être désactivée : `dist/index.cjs`
 est un bundle autonome. Le package de build se trouve dans
 `plesk-deployment/`.
