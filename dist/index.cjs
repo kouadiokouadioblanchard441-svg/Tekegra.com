@@ -39152,12 +39152,25 @@ async function closeDatabase() {
   await pool.end();
 }
 
+// server/bot-runtime.ts
+var runtime = { state: "stopped" };
+function setTelegramBotRuntime(update) {
+  runtime = { ...runtime, ...update };
+}
+function getTelegramBotRuntime() {
+  return { ...runtime, lastExit: runtime.lastExit && { ...runtime.lastExit } };
+}
+
 // server/routes/health.ts
 var router = (0, import_express.Router)();
 router.get("/healthz", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
-    res.json({ status: "ok", database: "ok" });
+    res.json({
+      status: "ok",
+      database: "ok",
+      telegramBot: getTelegramBotRuntime()
+    });
   } catch {
     res.status(503).json({ status: "degraded", database: "unavailable" });
   }
@@ -41522,35 +41535,105 @@ async function start() {
   await runMigrations();
   await pool.query("SELECT 1");
   let botProcess;
-  if (process.env.TELEGRAM_BOT_AUTOSTART !== "false") {
-    const executableDir = import_node_path2.default.dirname(import_node_path2.default.resolve(process.argv[1] ?? process.cwd()));
+  let botRestartTimer;
+  let shuttingDown = false;
+  function scheduleBotRestart() {
+    if (shuttingDown || botRestartTimer) return;
+    botRestartTimer = setTimeout(() => {
+      botRestartTimer = void 0;
+      startTelegramBot();
+    }, 1e4);
+    botRestartTimer.unref();
+  }
+  function startTelegramBot() {
+    if (shuttingDown) return;
+    const executableDir = import_node_path2.default.dirname(
+      import_node_path2.default.resolve(process.argv[1] ?? process.cwd())
+    );
     const botStartScript = [
-      import_node_path2.default.resolve(process.cwd(), "plesk-deployment", "telegram-bot", "start.sh"),
+      import_node_path2.default.resolve(
+        process.cwd(),
+        "plesk-deployment",
+        "telegram-bot",
+        "start.sh"
+      ),
       import_node_path2.default.resolve(process.cwd(), "telegram-bot", "start.sh"),
-      import_node_path2.default.resolve(executableDir, "..", "plesk-deployment", "telegram-bot", "start.sh"),
+      import_node_path2.default.resolve(
+        executableDir,
+        "..",
+        "plesk-deployment",
+        "telegram-bot",
+        "start.sh"
+      ),
       import_node_path2.default.resolve(executableDir, "..", "telegram-bot", "start.sh")
     ].find((candidate) => (0, import_node_fs.existsSync)(candidate));
     if (!botStartScript) {
-      logger.error("Telegram bot start.sh was not found in the Plesk deployment.");
-    } else {
-      botProcess = (0, import_node_child_process.spawn)("bash", [botStartScript], {
-        cwd: import_node_path2.default.dirname(botStartScript),
-        env: process.env,
-        stdio: "inherit"
+      setTelegramBotRuntime({
+        state: "missing",
+        lastError: "telegram-bot/start.sh was not found"
       });
-      logger.info({ pid: botProcess.pid }, "Telegram bot started by the Plesk app");
-      botProcess.once("error", (error) => {
-        logger.error({ err: error }, "Telegram bot could not be started");
+      logger.error(
+        {
+          cwd: process.cwd(),
+          executableDir
+        },
+        "Telegram bot start.sh was not found in the Plesk deployment"
+      );
+      return;
+    }
+    setTelegramBotRuntime({
+      state: "starting",
+      script: botStartScript,
+      lastError: void 0
+    });
+    botProcess = (0, import_node_child_process.spawn)("bash", [botStartScript], {
+      cwd: import_node_path2.default.dirname(botStartScript),
+      env: process.env,
+      stdio: "inherit"
+    });
+    setTelegramBotRuntime({
+      state: "running",
+      pid: botProcess.pid,
+      startedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    logger.info(
+      { pid: botProcess.pid, script: botStartScript },
+      "Telegram bot started by the Plesk app"
+    );
+    botProcess.once("error", (error) => {
+      setTelegramBotRuntime({
+        state: "exited",
+        lastError: error.message
       });
-      botProcess.once("exit", (code, signal) => {
-        if (code === 0) {
-          logger.info("Telegram bot stopped");
-        } else {
-          logger.error({ code, signal }, "Telegram bot exited unexpectedly");
+      logger.error({ err: error }, "Telegram bot could not be started");
+    });
+    botProcess.once("exit", (code, signal) => {
+      botProcess = void 0;
+      if (shuttingDown) {
+        setTelegramBotRuntime({ state: "stopped", pid: void 0 });
+        logger.info("Telegram bot stopped");
+        return;
+      }
+      setTelegramBotRuntime({
+        state: "exited",
+        pid: void 0,
+        lastExit: {
+          code,
+          signal,
+          at: (/* @__PURE__ */ new Date()).toISOString()
         }
       });
-    }
+      logger.error(
+        { code, signal },
+        "Telegram bot exited unexpectedly; retrying in 10 seconds"
+      );
+      scheduleBotRestart();
+    });
+  }
+  if (process.env.TELEGRAM_BOT_AUTOSTART !== "false") {
+    startTelegramBot();
   } else {
+    setTelegramBotRuntime({ state: "disabled" });
     logger.info("Telegram bot autostart disabled by TELEGRAM_BOT_AUTOSTART=false");
   }
   const server = app_default.listen(port, "0.0.0.0", () => {
@@ -41558,6 +41641,11 @@ async function start() {
   });
   async function shutdown(signal) {
     logger.info({ signal }, "Shutdown requested");
+    shuttingDown = true;
+    if (botRestartTimer) {
+      clearTimeout(botRestartTimer);
+      botRestartTimer = void 0;
+    }
     if (botProcess && !botProcess.killed) {
       botProcess.kill("SIGTERM");
     }
