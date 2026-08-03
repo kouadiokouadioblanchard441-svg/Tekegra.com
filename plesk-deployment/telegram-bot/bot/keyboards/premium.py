@@ -1,6 +1,24 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
+def premium_signal_type_keyboard() -> InlineKeyboardMarkup:
+    """Signal mode choices shown to active Premium users."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🎯 Petite Côte",
+                callback_data="lj:signal_premium:petite",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="🚀 Grosse Côte",
+                callback_data="lj:signal_premium:grosse",
+            ),
+        ],
+    ])
+
+
 def premium_keyboard(price_7: str = "5 594 F", price_30: str = "16 794 F") -> InlineKeyboardMarkup:
     buttons = [
         [

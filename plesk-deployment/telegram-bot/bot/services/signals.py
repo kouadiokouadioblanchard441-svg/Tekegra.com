@@ -135,6 +135,35 @@ def _assurance_for_type(cote_type: str) -> str:
     return "1.20X+" if cote_type == "petite" else "2.00X+"
 
 
+def _premium_luckyjet_ranges(cote_type: str) -> tuple[float, float, float, float]:
+    """Return (assurance_min, assurance_max, cote_min, cote_max)."""
+    if cote_type == "petite":
+        return 1.50, 2.00, 2.00, 5.00
+    return 3.50, 5.00, 7.00, 28.00
+
+
+def _is_valid_premium_luckyjet_prediction(
+    cote_type: str,
+    assurance: float,
+    cote: float,
+) -> bool:
+    assurance_min, assurance_max, cote_min, cote_max = _premium_luckyjet_ranges(cote_type)
+    return (
+        assurance_min <= assurance <= assurance_max
+        and cote_min <= cote <= cote_max
+    )
+
+
+def _generate_premium_luckyjet_values(cote_type: str) -> tuple[float, float]:
+    """Generate Premium values until both requested ranges are satisfied."""
+    assurance_min, assurance_max, cote_min, cote_max = _premium_luckyjet_ranges(cote_type)
+    while True:
+        assurance = round(random.uniform(assurance_min, assurance_max), 2)
+        cote = round(random.uniform(cote_min, cote_max), 2)
+        if _is_valid_premium_luckyjet_prediction(cote_type, assurance, cote):
+            return assurance, cote
+
+
 # ─── Générateurs de cote ──────────────────────────────────────────────────────
 
 def _cote_for_type(
@@ -174,15 +203,21 @@ def generate_luckyjet_signal(is_premium: bool = False, cote_type: str = "auto") 
 
     # ── Plages Lucky Jet ──────────────────────────────────────────────────────
     # Standard  : côte 2.00x–5.00x   |  assurance 1.50x–2.00x
-    # Premium   : côte 6.00x–20.00x  |  assurance 4.00x–6.00x
-    if is_premium:
-        if cote_type == "petite":
-            fn = lambda: round(random.uniform(6.00, 12.00), 2)
-        elif cote_type == "grosse":
-            fn = lambda: round(random.uniform(12.00, 20.00), 2)
-        else:
-            fn = lambda: round(random.uniform(6.00, 20.00), 2)
+    # Premium modes use their own exact ranges; auto remains unchanged.
+    if is_premium and cote_type in ("petite", "grosse"):
+        assurance_float, generated_cote = _generate_premium_luckyjet_values(cote_type)
+        cote_float = _unique_cote("luckyjet", lambda: generated_cote)
+        # _unique_cote can retry for anti-repetition, but every candidate
+        # must remain inside the selected Premium range.
+        while not _is_valid_premium_luckyjet_prediction(
+            cote_type, assurance_float, cote_float
+        ):
+            assurance_float, generated_cote = _generate_premium_luckyjet_values(cote_type)
+            cote_float = _unique_cote("luckyjet", lambda: generated_cote)
+    elif is_premium:
+        fn = lambda: round(random.uniform(6.00, 20.00), 2)
         assurance_float = round(random.uniform(4.00, 6.00), 2)
+        cote_float = _unique_cote("luckyjet", fn)
     else:
         if cote_type == "petite":
             fn = lambda: round(random.uniform(2.00, 3.50), 2)
@@ -191,8 +226,7 @@ def generate_luckyjet_signal(is_premium: bool = False, cote_type: str = "auto") 
         else:
             fn = lambda: round(random.uniform(2.00, 5.00), 2)
         assurance_float = round(random.uniform(1.50, 2.00), 2)
-
-    cote_float = _unique_cote("luckyjet", fn)
+        cote_float = _unique_cote("luckyjet", fn)
     cote_str = f"{cote_float}x"
     assurance = f"{assurance_float}x"
 
