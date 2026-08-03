@@ -11,9 +11,9 @@ contient :
 - `telegram-bot/.env.example` : variables du bot.
 
 Le panneau admin et l’API sont servis par **un seul processus Node.js**. Le
-bot Telegram reste un second processus Python, car sa version actuelle utilise
-aiogram et SQLAlchemy asynchrones. Le serveur Node Plesk le démarre
-automatiquement afin qu’il hérite des mêmes variables d’environnement.
+bot Telegram est un **second processus Python indépendant**, car sa version
+actuelle utilise aiogram et SQLAlchemy asynchrones. Node.js ne lance jamais le
+bot.
 
 ## Prérequis
 
@@ -58,8 +58,7 @@ npm start
 ```
 
 Le démarrage exécute les migrations PostgreSQL idempotentes avant d’ouvrir le
-port, puis lance le bot Python séparé avec le même environnement. Il ne
-supprime jamais de table et ne remplace jamais de données.
+port. Il ne supprime jamais de table et ne remplace jamais de données.
 
 ## Configuration PostgreSQL
 
@@ -93,28 +92,26 @@ Le bot est un service séparé. Depuis `telegram-bot/` :
 bash start.sh
 ```
 
-Le bot est lancé automatiquement par `npm start` comme processus Python enfant.
-La commande manuelle ci-dessous est utile uniquement pour un diagnostic :
+Le bot doit être configuré comme un **service Python séparé sur Plesk**
+(Supervisor, systemd ou gestionnaire de processus Python disponible chez ton
+hébergeur). La commande de démarrage est :
 
 ```bash
 bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
 Le script crée automatiquement `telegram-bot/.venv`, installe les dépendances
-et lance `main.py`. Comme il est lancé par Node, il reçoit directement les
-variables déjà configurées dans l'application Plesk. Un fichier local
-`telegram-bot/.env` peut aussi être utilisé pour un lancement manuel, mais il
-ne doit jamais être ajouté à Git.
-
-Si un Supervisor Plesk lance déjà le bot séparément, désactiver le lancement
-automatique dans l'application Node avec :
+et lance `main.py`. Les variables d’environnement doivent être configurées
+dans ce service Python, séparément de l’application Node :
 
 ```text
-TELEGRAM_BOT_AUTOSTART=false
+BOT_TOKEN=<token fourni par BotFather>
+SUPABASE_DATABASE_URL=<URL PostgreSQL Supabase>
 ```
 
-Il ne faut jamais lancer les deux modes en même temps : Telegram refuserait
-le deuxième polling avec une erreur de conflit.
+`DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Un fichier local
+`telegram-bot/.env` peut aussi être utilisé sur Plesk, mais il ne doit jamais
+être ajouté à Git.
 
 ## Checklist de mise en production
 

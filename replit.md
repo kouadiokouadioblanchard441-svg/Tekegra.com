@@ -8,18 +8,31 @@ Bot Telegram de signaux de jeu (Lucky Jet / Mines / Rocket Queen) avec panneau d
 |-----------|-------|-------------|
 | Panneau Admin | React / Vite / TypeScript | `artifacts/admin-panel/` |
 | API Server | Node.js / Express / TypeScript | `artifacts/api-server/` |
-| Bot Telegram | Python 3 / aiogram 3 / SQLAlchemy | `artifacts/telegram-bot/` |
+| Bot Telegram production | Python 3 / aiogram 3 / SQLAlchemy | `plesk-deployment/telegram-bot/` |
 | Base de données | Supabase PostgreSQL | variable `SUPABASE_DATABASE_URL` |
 
 ## Démarrage
 
-Les workflows gérés démarrent automatiquement :
+Les services de développement Replit disponibles sont :
 
 - **`artifacts/admin-panel: web`** — Panneau admin React sur `/admin-panel/`
 - **`artifacts/api-server: API Server`** — API Express sur `/api`
-- **`Telegram Bot`** — Bot Python (démarrer manuellement après avoir configuré les secrets)
 
-## Variables d'environnement requises (Replit Secrets)
+Le bot Telegram **n'est pas lancé par Replit**. Il est exécuté uniquement sur
+le serveur Plesk comme processus Python séparé avec :
+
+```bash
+bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
+```
+
+Replit sert uniquement d'environnement de développement et de préparation du
+build GitHub → Plesk.
+
+## Variables d'environnement de développement
+
+Les secrets éventuellement présents dans Replit servent uniquement aux tests
+et au développement. La production utilise les variables configurées dans
+Plesk, séparément pour l'application Node et le processus Python du bot.
 
 | Variable | Description |
 |----------|-------------|

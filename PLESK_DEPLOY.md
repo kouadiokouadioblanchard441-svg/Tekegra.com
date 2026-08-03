@@ -127,18 +127,17 @@ Le contrôle de build équivalent depuis `plesk-deployment/` est :
 npm run check:bot
 ```
 
-Le démarrage Plesk de `dist/index.cjs` lance automatiquement le bot Python
-comme processus enfant séparé. Il hérite donc des variables de l'application
-Node et ne nécessite pas un deuxième service Supervisor.
+Le bot Telegram n'est pas lancé par Replit et n'est pas lancé par le processus
+Node.js. Sur le serveur Plesk, créer un **service Python séparé** avec
+Supervisor, systemd ou le gestionnaire de processus disponible.
 
-Pour un diagnostic manuel, utiliser cette commande :
+Commande de démarrage du service Python :
 
 ```bash
 bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
 ```
 
-Dans les variables d'environnement de l'application Node Plesk, vérifier que
-ces variables sont présentes :
+Dans les variables d'environnement de ce service Python Plesk, ajouter :
 
 ```text
 BOT_TOKEN=<token fourni par BotFather>
@@ -147,15 +146,13 @@ SUPABASE_DATABASE_URL=<URL PostgreSQL Supabase>
 
 `DATABASE_URL` peut remplacer `SUPABASE_DATABASE_URL`. Le script accepte aussi
 un fichier local
-`/voltatrucks.online/plesk-deployment/telegram-bot/.env` (non versionné) lors
-d'un lancement manuel.
+`/voltatrucks.online/plesk-deployment/telegram-bot/.env` (non versionné).
 
-Si un processus Python Supervisor existe déjà, ajouter
-`TELEGRAM_BOT_AUTOSTART=false` dans l'application Node pour éviter deux
-pollings Telegram en parallèle. Il ne faut jamais lancer les deux modes en
-même temps : Telegram refuserait le deuxième polling avec une erreur de conflit.
+Ne configure pas le bot comme une deuxième application Node.js et ne lance pas
+le bot depuis `dist/index.cjs`. Le bot doit avoir son propre processus Python
+et son propre environnement.
 
 Après avoir vérifié les variables, effectuer **Pull → Deploy Now → Restart
-App**. Les logs doivent ensuite afficher successivement le démarrage du
-processus Telegram, une connexion Telegram vérifiée, l'initialisation
+App` pour Node, puis redémarrer le service Python du bot. Ses logs doivent
+afficher successivement une connexion Telegram vérifiée, l'initialisation
 PostgreSQL, puis `Starting polling`.
