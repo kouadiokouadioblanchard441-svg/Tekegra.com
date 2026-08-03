@@ -10,10 +10,11 @@ async def get_affiliate_link(
     session: AsyncSession,
     fallback: str = "",
 ) -> str:
-    """Return the admin-panel affiliate link, falling back to environment config."""
+    """Return the admin-panel affiliate link, falling back to bot config."""
     configured = await BotSettingsService(session).get("affiliate_link")
     configured = (configured or "").strip()
-    return configured or fallback.strip()
+    fallback = fallback.strip()
+    return configured or fallback
 
 
 class BotSettingsService:
