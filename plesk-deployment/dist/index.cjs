@@ -41614,37 +41614,21 @@ async function start() {
       ),
       import_node_path2.default.resolve(executableDir, "..", "telegram-bot", "start.sh")
     ].find((candidate) => (0, import_node_fs2.existsSync)(candidate));
-    const botRoot = botStartScript ? import_node_path2.default.dirname(botStartScript) : [
-      import_node_path2.default.resolve(process.cwd(), "plesk-deployment", "telegram-bot"),
-      import_node_path2.default.resolve(process.cwd(), "telegram-bot"),
-      import_node_path2.default.resolve(executableDir, "..", "plesk-deployment", "telegram-bot"),
-      import_node_path2.default.resolve(executableDir, "..", "telegram-bot")
-    ].find((candidate) => (0, import_node_fs2.existsSync)(import_node_path2.default.join(candidate, "main.py")));
-    if (!botRoot) {
+    if (!botStartScript) {
       setTelegramBotRuntime({
         state: "missing",
-        lastError: "telegram-bot/main.py was not found"
+        lastError: "telegram-bot/start.sh was not found"
       });
       logger.error(
         {
           cwd: process.cwd(),
           executableDir
         },
-        "Telegram bot main.py was not found in the Plesk deployment"
+        "Telegram bot start.sh was not found in the Plesk deployment"
       );
       return;
     }
-    const botMain = import_node_path2.default.join(botRoot, "main.py");
-    if (!(0, import_node_fs2.existsSync)(botMain)) {
-      setTelegramBotRuntime({
-        state: "missing",
-        lastError: "telegram-bot/main.py was not found"
-      });
-      logger.error({ botMain }, "Telegram bot main.py was not found");
-      return;
-    }
-    const virtualenvPython = import_node_path2.default.join(botRoot, ".venv", "bin", "python");
-    const botPython = (0, import_node_fs2.existsSync)(virtualenvPython) ? virtualenvPython : process.env.BOT_PYTHON || "python3";
+    const botRoot = import_node_path2.default.dirname(botStartScript);
     const statusFile = import_node_path2.default.join(
       "/tmp",
       `voltatrucks-telegram-bot-${process.pid}.json`
@@ -41656,13 +41640,13 @@ async function start() {
     (0, import_node_fs2.rmSync)(stderrFile, { force: true });
     setTelegramBotRuntime({
       state: "starting",
-      script: botMain,
+      script: botStartScript,
       statusFile,
       stderrFile,
       lastError: void 0,
       botStatus: void 0
     });
-    botProcess = (0, import_node_child_process.spawn)(botPython, [botMain], {
+    botProcess = (0, import_node_child_process.spawn)("bash", [botStartScript], {
       cwd: botRoot,
       env: {
         ...process.env,
@@ -41679,7 +41663,7 @@ async function start() {
       startedAt: (/* @__PURE__ */ new Date()).toISOString()
     });
     logger.info(
-      { pid: botProcess.pid, python: botPython, script: botMain },
+      { pid: botProcess.pid, script: botStartScript },
       "Telegram bot started by the Plesk app"
     );
     botProcess.stdout?.on("data", (chunk) => {

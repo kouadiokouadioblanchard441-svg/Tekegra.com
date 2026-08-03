@@ -56,49 +56,22 @@ async function start(): Promise<void> {
       path.resolve(executableDir, "..", "telegram-bot", "start.sh"),
     ].find((candidate) => existsSync(candidate));
 
-    const botRoot = botStartScript
-      ? path.dirname(botStartScript)
-      : [
-          path.resolve(process.cwd(), "plesk-deployment", "telegram-bot"),
-          path.resolve(process.cwd(), "telegram-bot"),
-          path.resolve(executableDir, "..", "plesk-deployment", "telegram-bot"),
-          path.resolve(executableDir, "..", "telegram-bot"),
-        ].find((candidate) => existsSync(path.join(candidate, "main.py")));
-
-    if (!botRoot) {
+    if (!botStartScript) {
       setTelegramBotRuntime({
         state: "missing",
-        lastError: "telegram-bot/main.py was not found",
+        lastError: "telegram-bot/start.sh was not found",
       });
       logger.error(
         {
           cwd: process.cwd(),
           executableDir,
         },
-        "Telegram bot main.py was not found in the Plesk deployment",
+        "Telegram bot start.sh was not found in the Plesk deployment",
       );
       return;
     }
 
-    const botMain = path.join(botRoot, "main.py");
-    if (!existsSync(botMain)) {
-      setTelegramBotRuntime({
-        state: "missing",
-        lastError: "telegram-bot/main.py was not found",
-      });
-      logger.error({ botMain }, "Telegram bot main.py was not found");
-      return;
-    }
-
-    // Do not execute start.sh here. Plesk/Passenger can retain an older
-    // deployment copy of that shell script, and its pip bootstrap can fail
-    // before Python starts. The Node supervisor only needs to launch the
-    // already-installed virtualenv directly; dependency installation belongs
-    // to deployment, not to every application restart.
-    const virtualenvPython = path.join(botRoot, ".venv", "bin", "python");
-    const botPython = existsSync(virtualenvPython)
-      ? virtualenvPython
-      : process.env.BOT_PYTHON || "python3";
+    const botRoot = path.dirname(botStartScript);
     const statusFile = path.join(
       "/tmp",
       `voltatrucks-telegram-bot-${process.pid}.json`,
@@ -111,14 +84,14 @@ async function start(): Promise<void> {
 
     setTelegramBotRuntime({
       state: "starting",
-      script: botMain,
+      script: botStartScript,
       statusFile,
       stderrFile,
       lastError: undefined,
       botStatus: undefined,
     });
 
-    botProcess = spawn(botPython, [botMain], {
+    botProcess = spawn("bash", [botStartScript], {
       cwd: botRoot,
       env: {
         ...process.env,
@@ -135,7 +108,7 @@ async function start(): Promise<void> {
       startedAt: new Date().toISOString(),
     });
     logger.info(
-      { pid: botProcess.pid, python: botPython, script: botMain },
+      { pid: botProcess.pid, script: botStartScript },
       "Telegram bot started by the Plesk app",
     );
     botProcess.stdout?.on("data", (chunk: Buffer | string) => {
