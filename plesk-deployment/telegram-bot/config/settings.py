@@ -1,11 +1,16 @@
 import os
+from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_BOT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Resolve the optional local file from this package, not from the
+        # process working directory. Plesk variables still take precedence.
+        env_file=_BOT_ROOT / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )

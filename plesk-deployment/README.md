@@ -46,6 +46,7 @@ reconstruire avant le push :
 npm ci
 npm run typecheck
 npm run build
+npm run check:bot
 npm run deploy:check
 ```
 
@@ -87,17 +88,22 @@ Une réponse saine ressemble à :
 Le bot est un service séparé. Depuis `telegram-bot/` :
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# renseigner BOT_TOKEN, ADMIN_ID et DATABASE_URL
-python main.py
+bash start.sh
 ```
 
 Dans Plesk, utiliser le gestionnaire de processus disponible
 (Node.js application pour le serveur, Supervisor/systemd ou une extension
 Plesk pour le bot). Ne lancez pas le bot dans le même processus que Node.
+La commande recommandée est :
+
+```bash
+bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
+```
+
+Le script crée automatiquement `telegram-bot/.venv`, installe les dépendances
+et lance `main.py`. Il utilise les variables d'environnement du processus
+Python ; configurez donc `BOT_TOKEN` et `DATABASE_URL` ou
+`SUPABASE_DATABASE_URL` dans ce processus également.
 
 ## Checklist de mise en production
 
@@ -123,13 +129,21 @@ Plesk pour le bot). Ne lancez pas le bot dans le même processus que Node.
 - [ ] Les bundles `server/dist/` et `client-dist/` sont présents dans Git
       pour le déploiement Pull + Deploy Now.
 
-## Créer l’archive de distribution
+## Flux GitHub → Plesk
 
-Depuis le répertoire parent :
+Aucune archive ZIP n’est nécessaire. Le build produit les dossiers
+`client-dist/` et `server/dist/`, qui sont versionnés dans GitHub. Après le
+push, Plesk utilise **Pull → Deploy Now → Restart App**.
+
+Le contrôle complet du package, y compris les imports Python du bot, est :
 
 ```bash
-./plesk-deployment/scripts/create-zip.sh
+npm run typecheck
+npm run build
+npm run check:bot
+npm run deploy:check
 ```
 
-Le script produit `dist/lucky-jet-ai-bot-plesk.zip`, sans `node_modules`,
-`.env`, caches Python ni fichiers de développement.
+Aucune archive ZIP n'est nécessaire et le script de génération d'archive a été
+supprimé. Le seul livrable est le dossier `plesk-deployment/` avec ses bundles
+compilés, à pousser dans GitHub.

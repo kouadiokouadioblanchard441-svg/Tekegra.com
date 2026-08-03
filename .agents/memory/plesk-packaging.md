@@ -8,3 +8,15 @@ The Plesk distribution keeps the React admin panel and Express API in one Node.j
 **Why:** Converting the bot during the hosting migration would be a high-risk rewrite and could change Telegram behavior; Plesk can supervise both services independently.
 
 **How to apply:** Future Plesk changes should preserve same-origin `/api` routing for the Node app, keep the bot process separate, and avoid putting secrets or `node_modules` into the distribution archive.
+
+The Python bot process must receive its own `BOT_TOKEN` and
+`DATABASE_URL`/`SUPABASE_DATABASE_URL`; variables configured only on the Plesk
+Node application are not guaranteed to reach Supervisor/systemd.
+
+**Why:** The bot is launched independently from Node, and its startup now
+validates Telegram credentials, PostgreSQL connectivity, and polling setup
+before serving updates.
+
+**How to apply:** Configure the bot process environment separately and launch
+`telegram-bot/start.sh`, which creates the virtualenv, installs pinned
+dependencies, and starts `main.py`.

@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.pool import AsyncAdaptedQueuePool
 from sqlalchemy.orm import DeclarativeBase
 from loguru import logger
-import os
+from config import settings
 
 
 class Base(DeclarativeBase):
@@ -19,7 +19,7 @@ def _get_db_url() -> tuple[str, dict]:
     """
     from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
-    raw = os.environ.get("SUPABASE_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
+    raw = settings.effective_database_url
     if not raw:
         raise RuntimeError("SUPABASE_DATABASE_URL (ou DATABASE_URL) n'est pas défini")
 

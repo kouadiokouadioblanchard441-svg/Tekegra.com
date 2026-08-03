@@ -14,6 +14,7 @@ cd plesk-deployment
 npm ci
 npm run typecheck
 npm run build
+npm run check:bot
 npm run deploy:check
 ```
 
@@ -35,6 +36,10 @@ git push origin main
 Ne pousse jamais un fichier `.env`. Les seuls fichiers d'environnement
 versionnés sont les `.env.example`.
 
+Aucune archive ZIP n'est nécessaire pour ce déploiement. Les dossiers
+`client-dist/` et `server/dist/` sont compilés puis versionnés directement dans
+GitHub.
+
 ## Configuration Plesk une seule fois
 
 Dans **Websites & Domains → Node.js** :
@@ -49,6 +54,8 @@ Dans **Websites & Domains → Node.js** :
 Ajoute les variables de `plesk-deployment/.env.example` dans les variables
 d'environnement Plesk. Le bot Telegram utilise les variables de
 `plesk-deployment/telegram-bot/.env.example` dans son propre processus.
+Les variables du bot doivent être présentes dans l'environnement du processus
+Python lancé par Supervisor/systemd ou le gestionnaire de processus Plesk.
 
 Active l'installation NPM si Plesk propose cette option. Elle doit s'exécuter
 dans `plesk-deployment/`, là où se trouvent `package.json` et
@@ -103,8 +110,31 @@ startup file sur `server/dist/index.js`.
 
 ```bash
 cd plesk-deployment/telegram-bot
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-python main.py
+bash start.sh
 ```
+
+Après l'installation, le bot vérifie automatiquement le token Telegram avec
+`getMe`, initialise PostgreSQL, supprime l'ancien webhook puis démarre le
+polling. Pour vérifier uniquement les imports sans démarrer le bot :
+
+```bash
+python -c "import main; print('bot imports: ok')"
+```
+
+Le contrôle de build équivalent depuis `plesk-deployment/` est :
+
+```bash
+npm run check:bot
+```
+
+Pour Supervisor ou un gestionnaire de processus Plesk, utiliser cette commande
+avec `plesk-deployment` comme répertoire de travail :
+
+```bash
+bash /voltatrucks.online/plesk-deployment/telegram-bot/start.sh
+```
+
+Le processus Python doit recevoir `BOT_TOKEN` et
+`DATABASE_URL` ou `SUPABASE_DATABASE_URL` dans son propre environnement. Les
+variables configurées uniquement dans l'application Node.js Plesk ne sont pas
+forcément transmises à Supervisor.

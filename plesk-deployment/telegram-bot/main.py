@@ -34,30 +34,39 @@ from database.db import init_db
 
 async def main() -> None:
     if not settings.BOT_TOKEN:
-        logger.error("BOT_TOKEN is not set. Configure it in telegram-bot/.env.")
+        logger.error("BOT_TOKEN is not set in the bot process environment.")
         sys.exit(1)
 
-    logger.info("Initialising database…")
-    await init_db()
+    if not settings.effective_database_url:
+        logger.error(
+            "DATABASE_URL or SUPABASE_DATABASE_URL is not set in the bot process environment."
+        )
+        sys.exit(1)
 
     bot = Bot(
         token=settings.BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN),
     )
 
-    dp = Dispatcher(storage=MemoryStorage())
-    dp.update.middleware(DbSessionMiddleware())
-    dp.update.middleware(BanCheckMiddleware())
-    dp.update.middleware(ChannelCheckMiddleware())
-    dp.update.middleware(ThrottlingMiddleware(rate=settings.THROTTLE_RATE))
-    dp.include_router(get_main_router())
-
-    # Drop any updates that arrived while the bot was offline so we don't
-    # replay stale messages on startup.
-    await bot.delete_webhook(drop_pending_updates=True)
-
-    logger.info(f"Starting polling — bot: {settings.BOT_NAME}")
     try:
+        bot_info = await bot.get_me()
+        logger.info(f"Telegram connection verified for @{bot_info.username}")
+
+        logger.info("Initialising database…")
+        await init_db()
+
+        dp = Dispatcher(storage=MemoryStorage())
+        dp.update.middleware(DbSessionMiddleware())
+        dp.update.middleware(BanCheckMiddleware())
+        dp.update.middleware(ChannelCheckMiddleware())
+        dp.update.middleware(ThrottlingMiddleware(rate=settings.THROTTLE_RATE))
+        dp.include_router(get_main_router())
+
+        # Drop any updates that arrived while the bot was offline so we don't
+        # replay stale messages on startup.
+        await bot.delete_webhook(drop_pending_updates=True)
+
+        logger.info("Starting polling — bot: %s", settings.BOT_NAME)
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         await bot.session.close()

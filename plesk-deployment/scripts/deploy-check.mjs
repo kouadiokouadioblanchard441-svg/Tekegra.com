@@ -4,6 +4,10 @@ const requiredFiles = [
   "client-dist/index.html",
   "server/dist/index.js",
   "server/dist/migrate.js",
+  "telegram-bot/main.py",
+  "telegram-bot/start.sh",
+  "telegram-bot/requirements.txt",
+  "telegram-bot/.env.example",
   "package-lock.json",
 ];
 
