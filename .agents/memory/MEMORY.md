@@ -1,1 +1,2 @@
 - [Plesk packaging](plesk-packaging.md) — keep the Node admin/API process and Python Telegram bot as separate services sharing PostgreSQL.
+- [Aiogram middleware scope](aiogram-middleware-scope.md) — event middleware must attach to concrete message/callback observers when handlers inspect those event types.
