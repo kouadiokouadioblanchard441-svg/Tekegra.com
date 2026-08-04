@@ -33,6 +33,18 @@ def mines_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def mines_premium_type_keyboard() -> InlineKeyboardMarkup:
+    """Choix du mode d'étoiles Premium : Petite (2-5 ⭐) ou Grosse (6-10 ⭐)."""
+    buttons = [
+        [
+            InlineKeyboardButton(text="🌟 Petite (2–5 ⭐)", callback_data="mines:signal_premium"),
+            InlineKeyboardButton(text="💥 Grosse (6–10 ⭐)", callback_data="mines:signal_premium"),
+        ],
+        [InlineKeyboardButton(text="↩ Retour", callback_data="mines:choose_type")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def mines_after_signal_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
     buttons = []
     if affiliate_link:
