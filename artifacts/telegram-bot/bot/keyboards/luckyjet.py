@@ -13,11 +13,11 @@ def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup
         [InlineKeyboardButton(text=free_label, callback_data="lj:get_signal")],
         [
             InlineKeyboardButton(
-                text="⭐ Petite Cote Premium",
+                text="✈️ Petite Cote Premium",
                 callback_data="lj:signal_premium:petite",
             ),
             InlineKeyboardButton(
-                text="⭐ Grosse Cote Premium",
+                text="🚀 Grosse Cote Premium",
                 callback_data="lj:signal_premium:grosse",
             ),
         ],
@@ -33,8 +33,8 @@ def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🎯 Signal Gratuit", callback_data="lj:get_signal"),
         ],
         [
-            InlineKeyboardButton(text="⭐ Petite Cote Premium", callback_data="lj:signal_premium:petite"),
-            InlineKeyboardButton(text="⭐ Grosse Cote Premium", callback_data="lj:signal_premium:grosse"),
+            InlineKeyboardButton(text="✈️ Petite Cote Premium", callback_data="lj:signal_premium:petite"),
+            InlineKeyboardButton(text="🚀 Grosse Cote Premium", callback_data="lj:signal_premium:grosse"),
         ],
         [
             InlineKeyboardButton(text="📊 Analyse IA", callback_data="lj:analyse"),
@@ -76,7 +76,7 @@ def luckyjet_after_premium_keyboard(
     label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     buttons.append([
         InlineKeyboardButton(
-            text=f"⭐ Nouveau signal premium {label}",
+            text=f"✈️ Nouveau signal premium {label}",
             callback_data=f"lj:signal_premium:{cote_type}",
         ),
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:luckyjet"),
