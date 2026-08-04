@@ -14,6 +14,11 @@ from bot.utils.message_cleaner import (
     track_signal_message,
     schedule_delete,
 )
+from bot.utils.cooldown import (
+    get_cooldown_remaining,
+    record_signal,
+    format_cooldown_message,
+)
 from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard, mines_choose_keyboard
 from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
@@ -89,7 +94,15 @@ async def _send_mines_signal(
         is_premium=is_premium,
         affiliate_link=settings.BOT_AFFILIATE_LINK,
     )
-    await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
+    try:
+        await loading.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
+    except Exception:
+        try:
+            sent = await loading.answer(header, parse_mode="Markdown", reply_markup=keyboard)
+            track_signal_message(call.from_user.id, sent.chat.id, sent.message_id)
+            schedule_delete(sent.chat.id, sent.message_id)
+        except Exception:
+            pass
 
 
 # ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
@@ -144,6 +157,16 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
         signal = generate_mines_signal(is_premium=True)
         await svc.consume_premium_signal(db_user)
     else:
+        # Cooldown check — free users only
+        wait = get_cooldown_remaining(user.id)
+        if wait > 0:
+            text = format_cooldown_message(wait)
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=mines_menu_keyboard())
+            await track_existing_message(user.id, call.message)
+            await call.answer("⏳ Attends encore un moment")
+            return
+
         allowed, remaining = await svc.try_consume_free_signal(db_user)
         if not allowed:
             text = (
@@ -158,6 +181,7 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
             await call.answer("⛔ Quota gratuit épuisé")
             return
         signal = generate_mines_signal(is_premium=False)
+        record_signal(user.id)
 
     await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
     await _send_mines_signal(call, signal, is_premium=is_premium)
@@ -179,6 +203,22 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
 
     await delete_previous_signal(user.id)
 
+    # Cooldown check — free users only
+    wait = get_cooldown_remaining(user.id)
+    if wait > 0:
+        text = format_cooldown_message(wait)
+        try:
+            await call.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=mines_menu_keyboard())
+            await track_existing_message(user.id, call.message)
+        except Exception:
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(call.message, user.id, text,
+                                       parse_mode="Markdown",
+                                       reply_markup=mines_menu_keyboard())
+        await call.answer("⏳ Attends encore un moment")
+        return
+
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
         text = (
@@ -195,17 +235,14 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
             await track_existing_message(user.id, call.message)
         except Exception:
             from bot.utils.message_cleaner import send_tracked_message
-            await send_tracked_message(
-                call.message,
-                user.id,
-                text,
-                parse_mode="Markdown",
-                reply_markup=premium_locked_keyboard(),
-            )
+            await send_tracked_message(call.message, user.id, text,
+                                       parse_mode="Markdown",
+                                       reply_markup=premium_locked_keyboard())
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
     signal = generate_mines_signal(is_premium=False)
+    record_signal(user.id)
     await svc.save_signal(user.id, "mines", signal, is_premium=False)
     await _send_mines_signal(call, signal, is_premium=False, remaining=remaining)
     await call.answer("✅ Grille Mines générée !")

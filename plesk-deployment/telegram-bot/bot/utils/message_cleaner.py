@@ -21,6 +21,16 @@ _tracked_messages: dict[int, set[tuple[int, int]]] = {}
 
 _bot = None
 SIGNAL_TTL_SECONDS = 10 * 60
+
+# Per-user asyncio locks — prevent two concurrent signal handlers for the same user.
+_user_locks: dict[int, asyncio.Lock] = {}
+
+
+def get_user_lock(user_id: int) -> asyncio.Lock:
+    """Return (or create) the per-user lock for signal generation."""
+    if user_id not in _user_locks:
+        _user_locks[user_id] = asyncio.Lock()
+    return _user_locks[user_id]
 # Telegram animates an actual delete in the client. Keep only a tiny buffer;
 # a longer sleep makes every navigation feel slow.
 DELETE_ANIMATION_DELAY_SECONDS = 0.04

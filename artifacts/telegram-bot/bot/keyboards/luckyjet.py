@@ -27,10 +27,10 @@ def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup
 
 
 def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
+    """Menu principal Lucky Jet — gratuit = signal normal, pas de choix Petite/Grosse."""
     buttons = [
         [
-            InlineKeyboardButton(text="🎯 Petite Cote (gratuit)", callback_data="lj:signal_free:petite"),
-            InlineKeyboardButton(text="💰 Grosse Cote (gratuit)", callback_data="lj:signal_free:grosse"),
+            InlineKeyboardButton(text="🎯 Signal Gratuit", callback_data="lj:get_signal"),
         ],
         [
             InlineKeyboardButton(text="⭐ Petite Cote Premium", callback_data="lj:signal_premium:petite"),
@@ -47,20 +47,17 @@ def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def luckyjet_after_signal_keyboard(
-    affiliate_link: str = "",
-    cote_type: str = "petite",
-) -> InlineKeyboardMarkup:
+def luckyjet_after_signal_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
+    """Boutons après un signal gratuit — pas de choix de type."""
     buttons = []
     if affiliate_link:
         buttons.append([
             InlineKeyboardButton(text="🎰 Créer un compte 1WIN ↗", url=affiliate_link),
         ])
-    label = "🎯 Petite Cote" if cote_type == "petite" else "💰 Grosse Cote"
     buttons.append([
         InlineKeyboardButton(
-            text=f"🔄 Nouveau signal {label}",
-            callback_data=f"lj:signal_free:{cote_type}",
+            text="🔄 Nouveau Signal",
+            callback_data="lj:get_signal",
         ),
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:luckyjet"),
     ])
