@@ -27,10 +27,11 @@ def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup
 
 
 def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
-    """Menu principal Lucky Jet — gratuit = signal normal, pas de choix Petite/Grosse."""
+    """Menu principal Lucky Jet avec bouton Réglage."""
     buttons = [
         [
-            InlineKeyboardButton(text="🎯 Signal Gratuit", callback_data="lj:get_signal"),
+            InlineKeyboardButton(text="🔥 Signal", callback_data="lj:get_signal"),
+            InlineKeyboardButton(text="⚙️ Réglage", callback_data="lj:reglage"),
         ],
         [
             InlineKeyboardButton(text="✈️ Petite Cote Premium", callback_data="lj:signal_premium:petite"),
@@ -47,18 +48,34 @@ def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def luckyjet_reglage_keyboard(current: str = "grosse") -> InlineKeyboardMarkup:
+    """Écran de réglage : choix de la plage de coefficient."""
+    petite_label = "✅ 2X - 5X" if current == "petite" else "2X - 5X"
+    grosse_label = "✅ 5X - 20X" if current == "grosse" else "5X - 20X"
+    buttons = [
+        [
+            InlineKeyboardButton(text=petite_label, callback_data="lj:set_cote:petite"),
+            InlineKeyboardButton(text=grosse_label, callback_data="lj:set_cote:grosse"),
+        ],
+        [
+            InlineKeyboardButton(text="⬅ Retour au menu", callback_data="menu:luckyjet"),
+        ],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def luckyjet_after_signal_keyboard(affiliate_link: str = "") -> InlineKeyboardMarkup:
-    """Boutons après un signal gratuit — pas de choix de type."""
+    """Boutons après un signal — avec bouton Réglage."""
     buttons = []
     if affiliate_link:
         buttons.append([
             InlineKeyboardButton(text="🎰 Créer un compte 1WIN ↗", url=affiliate_link),
         ])
     buttons.append([
-        InlineKeyboardButton(
-            text="🔄 Nouveau Signal",
-            callback_data="lj:get_signal",
-        ),
+        InlineKeyboardButton(text="🔄 Nouveau Signal", callback_data="lj:get_signal"),
+        InlineKeyboardButton(text="⚙️ Réglage", callback_data="lj:reglage"),
+    ])
+    buttons.append([
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:luckyjet"),
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -79,6 +96,9 @@ def luckyjet_after_premium_keyboard(
             text=f"✈️ Nouveau signal premium {label}",
             callback_data=f"lj:signal_premium:{cote_type}",
         ),
+        InlineKeyboardButton(text="⚙️ Réglage", callback_data="lj:reglage"),
+    ])
+    buttons.append([
         InlineKeyboardButton(text="⬅ Menu", callback_data="menu:luckyjet"),
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)

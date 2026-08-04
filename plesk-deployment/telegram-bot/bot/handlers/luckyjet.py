@@ -31,8 +31,10 @@ from bot.keyboards.luckyjet import (
     luckyjet_after_signal_keyboard,
     luckyjet_after_premium_keyboard,
     luckyjet_choose_keyboard,
+    luckyjet_reglage_keyboard,
 )
 from bot.keyboards.premium import premium_locked_keyboard
+from bot.utils.user_prefs import get_cote_pref, set_cote_pref
 from config import settings
 from loguru import logger
 
@@ -137,8 +139,10 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
 
     await delete_previous_signal(user.id)
 
+    cote_pref = get_cote_pref(user.id)
+
     if is_premium:
-        signal = generate_luckyjet_signal(is_premium=True, cote_type="grosse")
+        signal = generate_luckyjet_signal(is_premium=True, cote_type=cote_pref)
         await svc.consume_premium_signal(db_user)
     else:
         allowed, remaining = await svc.try_consume_free_signal(db_user)
@@ -155,7 +159,7 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
             await track_existing_message(user.id, call.message)
             await call.answer("⛔ Quota gratuit épuisé")
             return
-        signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
+        signal = generate_luckyjet_signal(is_premium=False, cote_type=cote_pref)
 
     record_signal(user.id)
     await svc.save_signal(user.id, "luckyjet", signal, is_premium=is_premium)
@@ -236,8 +240,9 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
-    # Free signal — always "auto" type (Petite/Grosse = Premium only)
-    signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
+    # Free signal — use the user's saved cote preference
+    cote_pref = get_cote_pref(user.id)
+    signal = generate_luckyjet_signal(is_premium=False, cote_type=cote_pref)
     record_signal(user.id)
     await svc.save_signal(user.id, "luckyjet", signal, is_premium=False)
 
@@ -247,7 +252,7 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         assurance=signal["assurance"],
         promo_code=settings.BOT_PROMO_CODE,
         is_premium=False,
-        cote_type="auto",
+        cote_type=cote_pref,
         mise_seconde=signal.get("mise_seconde", 0.0),
         confidence=signal.get("confidence", 0),
         quality=signal.get("quality", ""),
@@ -461,3 +466,50 @@ async def cb_history(call: CallbackQuery, session: AsyncSession):
         reply_markup=luckyjet_menu_keyboard(),
     )
     await call.answer()
+
+
+# ── Réglage : choix de la plage de coefficient ────────────────────────────────
+@router.callback_query(F.data == "lj:reglage")
+async def cb_lj_reglage(call: CallbackQuery):
+    """Affiche l'écran de réglage avec la plage actuelle mise en évidence."""
+    current = get_cote_pref(call.from_user.id)
+    label = "Petite (2X–5X)" if current == "petite" else "Grosse (5X–20X)"
+    text = (
+        f"⚙️ *RÉGLAGE — Lucky Jet*\n\n"
+        f"{SEP}\n"
+        f"│◉ Réglage actuel : *{label}*\n"
+        f"│◉ Choisissez la plage de coefficient :\n"
+        f"{SEP}\n\n"
+        "👇 Sélectionnez ci-dessous :"
+    )
+    await call.message.edit_text(
+        text,
+        parse_mode="Markdown",
+        reply_markup=luckyjet_reglage_keyboard(current),
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("lj:set_cote:"))
+async def cb_lj_set_cote(call: CallbackQuery):
+    """Enregistre le choix de plage et confirme à l'utilisateur."""
+    cote_type = call.data.split(":")[-1]
+    if cote_type not in ("petite", "grosse"):
+        await call.answer("❌ Paramètre invalide", show_alert=True)
+        return
+
+    set_cote_pref(call.from_user.id, cote_type)
+    label = "Petite (2X–5X)" if cote_type == "petite" else "Grosse (5X–20X)"
+    text = (
+        f"✅ *Réglage enregistré*\n\n"
+        f"{SEP}\n"
+        f"│◉ Plage choisie : *{label}*\n"
+        f"│◉ Ton prochain signal utilisera cette plage 🎯\n"
+        f"{SEP}"
+    )
+    await call.message.edit_text(
+        text,
+        parse_mode="Markdown",
+        reply_markup=luckyjet_reglage_keyboard(cote_type),
+    )
+    await call.answer(f"✅ Réglage enregistré : {label}")
