@@ -15,6 +15,12 @@ from bot.utils.message_cleaner import (
     track_signal_message,
     schedule_delete,
 )
+from bot.utils.cooldown import (
+    record_signal,
+    release_signal_reservation,
+    reserve_signal,
+    format_cooldown_message,
+)
 from bot.keyboards.rocketqueen import (
     rocketqueen_menu_keyboard,
     rocketqueen_after_signal_keyboard,
@@ -58,10 +64,14 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await delete_previous_signal(user.id)
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        await call.answer("⏳ Attends encore un moment", show_alert=True)
+        return
 
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
+        release_signal_reservation(user.id)
         text = (
             f"⛔ *Quota gratuit épuisé*\n\n"
             f"{SEP}\n"
@@ -86,7 +96,9 @@ async def cb_rq_free(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
+    await delete_previous_signal(user.id)
     signal = generate_rocketqueen_signal(is_premium=False, cote_type=cote_type)
+    record_signal(user.id)
     await svc.save_signal(user.id, "rocketqueen", signal, is_premium=False)
 
     text = format_rocketqueen_signal(
@@ -157,10 +169,15 @@ async def cb_rq_premium(call: CallbackQuery, session: AsyncSession):
         await call.answer("🔒 Premium requis")
         return
 
-    await delete_previous_signal(user.id)
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        await call.answer("⏳ Attends encore un moment", show_alert=True)
+        return
 
+    await delete_previous_signal(user.id)
     signal = generate_rocketqueen_signal(is_premium=True, cote_type=cote_type)
     await svc.consume_premium_signal(db_user)
+    record_signal(user.id)
     await svc.save_signal(user.id, "rocketqueen", signal, is_premium=True)
 
     text = format_rocketqueen_signal(
@@ -220,9 +237,20 @@ async def cb_rq_analyse(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        await call.message.edit_text(
+            format_cooldown_message(wait),
+            parse_mode="Markdown",
+            reply_markup=rocketqueen_menu_keyboard(),
+        )
+        await call.answer("⏳ Attends encore un moment")
+        return
+
     await call.message.edit_text("⏳ *Chargement Rocket Queen...*", parse_mode="Markdown")
     await asyncio.sleep(0.15)
     signal = generate_rocketqueen_signal(is_premium=False, cote_type="auto")
+    record_signal(user.id)
     text = (
         f"🚀 *ROCKET QUEEN ANALYSE*\n"
         f"{SEP}\n"

@@ -21,8 +21,9 @@ from bot.utils.message_cleaner import (
     schedule_delete,
 )
 from bot.utils.cooldown import (
-    get_cooldown_remaining,
     record_signal,
+    release_signal_reservation,
+    reserve_signal,
     format_cooldown_message,
 )
 from bot.keyboards.luckyjet import (
@@ -121,25 +122,28 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await delete_previous_signal(user.id)
     is_premium = db_user.is_premium
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        text = format_cooldown_message(wait)
+        await call.message.edit_text(
+            text,
+            parse_mode="Markdown",
+            reply_markup=luckyjet_menu_keyboard(),
+        )
+        await track_existing_message(user.id, call.message)
+        await call.answer("⏳ Attends encore un moment")
+        return
+
+    await delete_previous_signal(user.id)
 
     if is_premium:
         signal = generate_luckyjet_signal(is_premium=True, cote_type="grosse")
         await svc.consume_premium_signal(db_user)
     else:
-        # Cooldown check — free users only
-        wait = get_cooldown_remaining(user.id)
-        if wait > 0:
-            text = format_cooldown_message(wait)
-            await call.message.edit_text(text, parse_mode="Markdown",
-                                         reply_markup=luckyjet_menu_keyboard())
-            await track_existing_message(user.id, call.message)
-            await call.answer("⏳ Attends encore un moment")
-            return
-
         allowed, remaining = await svc.try_consume_free_signal(db_user)
         if not allowed:
+            release_signal_reservation(user.id)
             text = (
                 f"⛔ *Quota gratuit épuisé*\n\n{SEP}\n"
                 f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
@@ -152,8 +156,8 @@ async def cb_lj_get_signal(call: CallbackQuery, session: AsyncSession):
             await call.answer("⛔ Quota gratuit épuisé")
             return
         signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
-        record_signal(user.id)
 
+    record_signal(user.id)
     await svc.save_signal(user.id, "luckyjet", signal, is_premium=is_premium)
 
     text = format_luckyjet_signal(
@@ -192,11 +196,8 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await delete_previous_signal(user.id)
-
-    # Cooldown check
-    wait = get_cooldown_remaining(user.id)
-    if wait > 0:
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
         text = format_cooldown_message(wait)
         try:
             await call.message.edit_text(text, parse_mode="Markdown",
@@ -210,8 +211,11 @@ async def cb_free_signal(call: CallbackQuery, session: AsyncSession):
         await call.answer("⏳ Attends encore un moment")
         return
 
+    await delete_previous_signal(user.id)
+
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
+        release_signal_reservation(user.id)
         text = (
             f"⛔ *Quota gratuit épuisé*\n\n"
             f"{SEP}\n"
@@ -309,10 +313,32 @@ async def _send_premium_signal(
         await call.answer("🔒 Premium requis")
         return
 
-    await delete_previous_signal(user.id)
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        text = format_cooldown_message(wait)
+        try:
+            await call.message.edit_text(
+                text,
+                parse_mode="Markdown",
+                reply_markup=luckyjet_menu_keyboard(),
+            )
+            await track_existing_message(user.id, call.message)
+        except Exception:
+            from bot.utils.message_cleaner import send_tracked_message
+            await send_tracked_message(
+                call.message,
+                user.id,
+                text,
+                parse_mode="Markdown",
+                reply_markup=luckyjet_menu_keyboard(),
+            )
+        await call.answer("⏳ Attends encore un moment")
+        return
 
+    await delete_previous_signal(user.id)
     signal = generate_luckyjet_signal(is_premium=True, cote_type=cote_type)
     await svc.consume_premium_signal(db_user)
+    record_signal(user.id)
     await svc.save_signal(user.id, "luckyjet", signal, is_premium=True)
 
     text = format_luckyjet_signal(
@@ -377,10 +403,21 @@ async def cb_analyse(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        await call.message.edit_text(
+            format_cooldown_message(wait),
+            parse_mode="Markdown",
+            reply_markup=luckyjet_menu_keyboard(),
+        )
+        await call.answer("⏳ Attends encore un moment")
+        return
+
     await call.message.edit_text("⏳ *Chargement Lucky Jet...*", parse_mode="Markdown")
     await asyncio.sleep(0.15)
 
     signal = generate_luckyjet_signal(is_premium=False, cote_type="auto")
+    record_signal(user.id)
     text = format_luckyjet_analysis(
         heure=signal["heure"],
         niveau=signal["niveau"],

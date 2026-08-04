@@ -1,13 +1,14 @@
-"""Per-user cooldown between free signal generations (in-memory).
+"""Per-user cooldown between signal generations (in-memory).
 
-The timer is shared across all games: a Lucky Jet signal blocks Mines too.
-Premium users bypass the cooldown entirely.
+The timer is shared across all games: a Lucky Jet signal blocks Mines and
+Rocket Queen too. A slot is reserved before generation so two simultaneous
+callbacks cannot both create a prediction.
 """
 import time
 
 SIGNAL_COOLDOWN_SECONDS = 121  # 2 minutes 1 second
 
-# {user_id: unix_timestamp_of_last_free_signal}
+# {user_id: unix_timestamp_of_last_completed_or_reserved_signal}
 _last_signal_time: dict[int, float] = {}
 
 
@@ -28,8 +29,28 @@ def get_cooldown_remaining(user_id: int) -> float:
 
 
 def record_signal(user_id: int) -> None:
-    """Record that a free signal was just generated for this user."""
+    """Record that a signal was just generated for this user."""
     _last_signal_time[user_id] = time.time()
+
+
+def release_signal_reservation(user_id: int) -> None:
+    """Release a slot reserved for a request that could not be generated."""
+    _last_signal_time.pop(user_id, None)
+
+
+def reserve_signal(user_id: int) -> tuple[bool, float]:
+    """Reserve the next signal slot atomically within the bot event loop.
+
+    The reservation happens before any awaited generation work. This closes
+    the race where a user taps two signal buttons before the first response
+    has finished. ``record_signal`` may be called after successful generation
+    to start the full cooldown from completion.
+    """
+    remaining = get_cooldown_remaining(user_id)
+    if remaining > 0:
+        return False, remaining
+    _last_signal_time[user_id] = time.time()
+    return True, 0.0
 
 
 def format_cooldown_message(seconds: float) -> str:
@@ -41,5 +62,5 @@ def format_cooldown_message(seconds: float) -> str:
         f"│◉ Prochain signal dans : *{wait}*\n"
         f"│◉ Reviens dans un moment 🕐\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "⭐ Les membres *Premium* n'ont aucune attente !"
+        "🎯 Tous les jeux partagent ce délai."
     )

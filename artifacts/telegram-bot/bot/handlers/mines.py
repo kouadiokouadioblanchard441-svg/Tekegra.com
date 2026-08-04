@@ -18,11 +18,17 @@ from bot.utils.message_cleaner import (
     schedule_delete,
 )
 from bot.utils.cooldown import (
-    get_cooldown_remaining,
     record_signal,
+    release_signal_reservation,
+    reserve_signal,
     format_cooldown_message,
 )
-from bot.keyboards.mines import mines_menu_keyboard, mines_after_signal_keyboard, mines_choose_keyboard
+from bot.keyboards.mines import (
+    mines_menu_keyboard,
+    mines_after_signal_keyboard,
+    mines_choose_keyboard,
+    mines_premium_type_keyboard,
+)
 from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
 from config import settings
@@ -166,25 +172,35 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await delete_previous_signal(user.id)
     is_premium = db_user.is_premium
 
     if is_premium:
-        signal = generate_mines_signal(is_premium=True)
-        await svc.consume_premium_signal(db_user)
+        await call.message.edit_text(
+            "💣 *MINES PREMIUM*\n\n"
+            f"{SEP}\n\n"
+            "Choisissez le mode d'étoiles :",
+            parse_mode="Markdown",
+            reply_markup=mines_premium_type_keyboard(),
+        )
+        await track_existing_message(user.id, call.message)
+        await call.answer()
+        return
     else:
-        # Cooldown check — free users only
-        wait = get_cooldown_remaining(user.id)
-        if wait > 0:
+        reserved, wait = reserve_signal(user.id)
+        if not reserved:
             text = format_cooldown_message(wait)
-            await call.message.edit_text(text, parse_mode="Markdown",
-                                         reply_markup=mines_menu_keyboard())
+            await call.message.edit_text(
+                text,
+                parse_mode="Markdown",
+                reply_markup=mines_menu_keyboard(),
+            )
             await track_existing_message(user.id, call.message)
             await call.answer("⏳ Attends encore un moment")
             return
 
         allowed, remaining = await svc.try_consume_free_signal(db_user)
         if not allowed:
+            release_signal_reservation(user.id)
             text = (
                 f"⛔ *Quota gratuit épuisé*\n\n{SEP}\n"
                 f"│◉ Tu as utilisé tes *{settings.FREE_SIGNALS_TOTAL} signaux gratuits*\n"
@@ -197,8 +213,9 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
             await call.answer("⛔ Quota gratuit épuisé")
             return
         signal = generate_mines_signal(is_premium=False)
-        record_signal(user.id)
 
+    await delete_previous_signal(user.id)
+    record_signal(user.id)
     await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
     await _send_mines_signal(call, signal, is_premium=is_premium)
     await call.answer("✅ Grille générée !")
@@ -217,11 +234,8 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         language_code=user.language_code,
     )
 
-    await delete_previous_signal(user.id)
-
-    # Cooldown check — free users only
-    wait = get_cooldown_remaining(user.id)
-    if wait > 0:
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
         text = format_cooldown_message(wait)
         try:
             await call.message.edit_text(text, parse_mode="Markdown",
@@ -235,8 +249,11 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         await call.answer("⏳ Attends encore un moment")
         return
 
+    await delete_previous_signal(user.id)
+
     allowed, remaining = await svc.try_consume_free_signal(db_user)
     if not allowed:
+        release_signal_reservation(user.id)
         text = (
             f"⛔ *Quota gratuit épuisé*\n\n"
             f"{SEP}\n"
@@ -302,10 +319,15 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
         await call.answer("🔒 Premium requis")
         return
 
-    await delete_previous_signal(user.id)
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        await call.answer("⏳ Attends encore un moment", show_alert=True)
+        return
 
+    await delete_previous_signal(user.id)
     signal = generate_mines_signal(is_premium=True)
     await svc.consume_premium_signal(db_user)
+    record_signal(user.id)
     await svc.save_signal(user.id, "mines", signal, is_premium=True)
     await _send_mines_signal(call, signal, is_premium=True)
     await call.answer("⭐ Grille Premium Mines générée !")
@@ -349,7 +371,18 @@ async def cb_mines_analyse(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        await call.message.edit_text(
+            format_cooldown_message(wait),
+            parse_mode="Markdown",
+            reply_markup=mines_menu_keyboard(),
+        )
+        await call.answer("⏳ Attends encore un moment")
+        return
+
     signal = generate_mines_signal(is_premium=False)
+    record_signal(user.id)
     await _send_mines_signal(call, signal, is_premium=False)
     await call.answer()
 
