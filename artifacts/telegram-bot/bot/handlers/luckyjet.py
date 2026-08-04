@@ -1,11 +1,8 @@
 """Lucky Jet signal handlers — signals sent as new messages, deleted on next request."""
 import asyncio
-from pathlib import Path
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
-
-_LUCKYJET_IMAGE = Path(__file__).parent.parent / "assets" / "luckyjet.jpg"
 
 from bot.services.signals import generate_luckyjet_signal
 from bot.services.user_service import UserService
@@ -43,7 +40,7 @@ SEP = "━━━━━━━━━━━━━━━━━━━━━━"
 
 
 async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None:
-    """Delete trigger message, send Lucky Jet image with loading caption, then edit caption to final signal."""
+    """Delete the trigger and send the Lucky Jet prediction as text."""
     trigger_was_tracked = is_tracked_message(call.from_user.id, call.message)
     await delete_previous_signal(call.from_user.id)
     # Delete the trigger message (choice screen / game menu) — silently ignore if already gone
@@ -52,23 +49,20 @@ async def _send_signal_message(call: CallbackQuery, text: str, keyboard) -> None
             await call.message.delete()
         except Exception:
             pass
-    # Send Lucky Jet image with loading caption
-    loading = await call.message.answer_photo(
-        photo=FSInputFile(_LUCKYJET_IMAGE),
-        caption="⏳ *Analyse en cours...*",
+    loading = await call.message.answer(
+        "⏳ *Analyse en cours...*",
         parse_mode="Markdown",
     )
     track_signal_message(call.from_user.id, loading.chat.id, loading.message_id)
     schedule_delete(loading.chat.id, loading.message_id)
     await asyncio.sleep(0.15)
     try:
-        await loading.edit_caption(caption=text, parse_mode="Markdown", reply_markup=keyboard)
+        await loading.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
     except Exception:
-        # Loading was deleted by a concurrent callback — send a fresh photo
+        # Loading was deleted by a concurrent callback — send a fresh text message.
         try:
-            sent = await call.message.answer_photo(
-                photo=FSInputFile(_LUCKYJET_IMAGE),
-                caption=text,
+            sent = await call.message.answer(
+                text,
                 parse_mode="Markdown",
                 reply_markup=keyboard,
             )

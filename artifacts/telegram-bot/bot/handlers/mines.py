@@ -1,11 +1,8 @@
 """Mines signal handlers — signals sent as new messages, deleted on next request."""
 import asyncio
-from pathlib import Path
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
-
-_MINES_IMAGE = Path(__file__).parent.parent / "assets" / "mines.jpg"
 
 from bot.services.signals import generate_mines_signal
 from bot.services.user_service import UserService
@@ -79,7 +76,7 @@ async def _send_mines_signal(
     is_premium: bool,
     remaining: int | None = None,
 ) -> None:
-    """Send the Mines image with a loading caption, then edit it to the final grid."""
+    """Send the Mines prediction as a text message with its grid and buttons."""
     # The previous response can be a menu or an older signal. Remove it before
     # creating the loading/final message so two bot messages cannot coexist.
     trigger_was_tracked = is_tracked_message(call.from_user.id, call.message)
@@ -90,9 +87,8 @@ async def _send_mines_signal(
     except Exception:
         pass
 
-    loading = await call.message.answer_photo(
-        photo=FSInputFile(_MINES_IMAGE),
-        caption="⏳ *Analyse de la grille...*",
+    loading = await call.message.answer(
+        "⏳ *Analyse de la grille...*",
         parse_mode="Markdown",
     )
     # Track the loading message immediately so it cannot become orphaned if
@@ -108,16 +104,15 @@ async def _send_mines_signal(
         affiliate_link=settings.BOT_AFFILIATE_LINK,
     )
     try:
-        await loading.edit_caption(
-            caption=header,
+        await loading.edit_text(
+            header,
             parse_mode="Markdown",
             reply_markup=keyboard,
         )
     except Exception:
         try:
-            sent = await call.message.answer_photo(
-                photo=FSInputFile(_MINES_IMAGE),
-                caption=header,
+            sent = await call.message.answer(
+                header,
                 parse_mode="Markdown",
                 reply_markup=keyboard,
             )
