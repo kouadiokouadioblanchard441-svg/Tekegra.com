@@ -15,8 +15,8 @@ Bot Telegram de signaux de jeu (Lucky Jet / Mines / Rocket Queen) avec panneau d
 
 Les services de développement Replit disponibles sont :
 
-- **`artifacts/admin-panel: web`** — Panneau admin React sur `/admin-panel/`
-- **`artifacts/api-server: API Server`** — API Express sur `/api`
+- **`Admin Panel`** — Panneau admin React sur `/admin-panel/`
+- **`API Server`** — API Express sur `/api`
 
 Le bot Telegram **n'est pas lancé par Replit**. Il est exécuté sur le **même VPS
 qui héberge Plesk**, automatiquement par le processus Node Plesk avec :
@@ -39,7 +39,7 @@ fourni reste une alternative ; ne l'active pas si l'autostart Node est utilisé.
 | Variable | Description |
 |----------|-------------|
 | `BOT_TOKEN` | Token du bot (@BotFather) |
-| `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432) |
+| `SUPABASE_DATABASE_URL` | URL Supabase Session pooler (port 5432), configurée dans les secrets Replit |
 | `SESSION_SECRET` | Clé JWT pour le panneau admin |
 
 ## Variables d'environnement optionnelles (userenv)
