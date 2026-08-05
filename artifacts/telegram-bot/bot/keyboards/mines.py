@@ -23,10 +23,6 @@ def mines_menu_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="⭐ Signal Premium", callback_data="mines:signal_premium"),
         ],
         [
-            InlineKeyboardButton(text="📊 Analyse IA", callback_data="mines:analyse"),
-            InlineKeyboardButton(text="📈 Historique", callback_data="mines:history"),
-        ],
-        [
             InlineKeyboardButton(text="⬅ Retour", callback_data="menu:main"),
         ],
     ]

@@ -18,19 +18,11 @@ def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup
 
 
 def luckyjet_menu_keyboard() -> InlineKeyboardMarkup:
-    """Menu principal Lucky Jet avec bouton Réglage."""
+    """Menu principal Lucky Jet."""
     buttons = [
         [
             InlineKeyboardButton(text="🔥 Signal", callback_data="lj:get_signal"),
             InlineKeyboardButton(text="⚙️ Réglage", callback_data="lj:reglage"),
-        ],
-        [
-            InlineKeyboardButton(text="✈️ Petite Cote Premium", callback_data="lj:signal_premium:petite"),
-            InlineKeyboardButton(text="🚀 Grosse Cote Premium", callback_data="lj:signal_premium:grosse"),
-        ],
-        [
-            InlineKeyboardButton(text="📊 Analyse IA", callback_data="lj:analyse"),
-            InlineKeyboardButton(text="📈 Historique", callback_data="lj:history"),
         ],
         [
             InlineKeyboardButton(text="⬅ Retour", callback_data="menu:main"),
