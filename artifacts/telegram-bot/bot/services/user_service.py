@@ -33,13 +33,13 @@ class UserService:
                 first_name=first_name,
                 last_name=last_name,
                 language_code=language_code or "fr",
-                approval_status="pending",  # new users must be approved
+                approval_status="approved",  # no approval required
             )
             self.session.add(user)
             await self.session.commit()
             await self.session.refresh(user)
             user._is_new = True  # signal to start handler
-            logger.info(f"New user registered (pending): {telegram_id} (@{username})")
+            logger.info(f"New user registered: {telegram_id} (@{username})")
         else:
             user._is_new = False
             # Updating activity on every callback forces a remote Supabase
