@@ -3,7 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup:
-    """Écran de choix : Gratuit ou Premium."""
+    """Écran de choix : Gratuit ou Premium — sans mention de la cote."""
     if remaining > 0:
         free_label = f"🎯 Signal Gratuit ({remaining}/{total} restants)"
     else:
@@ -11,16 +11,7 @@ def luckyjet_choose_keyboard(remaining: int, total: int) -> InlineKeyboardMarkup
 
     buttons = [
         [InlineKeyboardButton(text=free_label, callback_data="lj:get_signal")],
-        [
-            InlineKeyboardButton(
-                text="✈️ Petite Cote Premium",
-                callback_data="lj:signal_premium:petite",
-            ),
-            InlineKeyboardButton(
-                text="🚀 Grosse Cote Premium",
-                callback_data="lj:signal_premium:grosse",
-            ),
-        ],
+        [InlineKeyboardButton(text="⭐ Signal Premium", callback_data="lj:signal_premium")],
         [InlineKeyboardButton(text="↩ Retour", callback_data="menu:luckyjet")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -58,7 +49,7 @@ def luckyjet_reglage_keyboard(current: str = "grosse") -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=grosse_label, callback_data="lj:set_cote:grosse"),
         ],
         [
-            InlineKeyboardButton(text="⬅ Retour au menu", callback_data="menu:luckyjet"),
+            InlineKeyboardButton(text="⬅ Retour", callback_data="menu:game_select"),
         ],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -90,11 +81,10 @@ def luckyjet_after_premium_keyboard(
         buttons.append([
             InlineKeyboardButton(text="🎰 Créer un compte 1WIN ↗", url=affiliate_link),
         ])
-    label = "Petite Cote" if cote_type == "petite" else "Grosse Cote"
     buttons.append([
         InlineKeyboardButton(
-            text=f"✈️ Nouveau signal premium {label}",
-            callback_data=f"lj:signal_premium:{cote_type}",
+            text="⭐ Nouveau signal premium",
+            callback_data="lj:signal_premium",
         ),
         InlineKeyboardButton(text="⚙️ Réglage", callback_data="lj:reglage"),
     ])

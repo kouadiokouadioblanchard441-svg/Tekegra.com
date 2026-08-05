@@ -28,6 +28,7 @@ from bot.keyboards.mines import (
 )
 from bot.keyboards.mines_grid import mines_grid_keyboard
 from bot.keyboards.premium import premium_locked_keyboard
+from bot.utils.user_prefs import get_star_pref, set_star_pref
 from config import settings
 from loguru import logger
 
@@ -122,6 +123,19 @@ async def _send_mines_signal(
             pass
 
 
+# ── Réglage mode étoiles (affiché en premier après sélection du jeu) ──────────
+@router.callback_query(F.data.startswith("mines:set_mode:"))
+async def cb_mines_set_mode(call: CallbackQuery, session: AsyncSession):
+    """Sauvegarde le mode étoiles et passe directement à la sélection Gratuit/Premium."""
+    mode = call.data.split(":")[-1]
+    if mode not in ("petite", "grosse"):
+        await call.answer("❌ Paramètre invalide", show_alert=True)
+        return
+    set_star_pref(call.from_user.id, mode)
+    # Aller directement au choix Gratuit/Premium sans mentionner le mode
+    await cb_mines_choose_type(call, session)
+
+
 # ── Écran de choix : Gratuit ou Premium ───────────────────────────────────────
 @router.callback_query(F.data == "mines:choose_type")
 async def cb_mines_choose_type(call: CallbackQuery, session: AsyncSession):
@@ -168,31 +182,21 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
     )
 
     is_premium = db_user.is_premium
+    star_mode = get_star_pref(user.id)
 
-    if is_premium:
+    reserved, wait = reserve_signal(user.id)
+    if not reserved:
+        text = format_cooldown_message(wait)
         await call.message.edit_text(
-            "💣 *MINES PREMIUM*\n\n"
-            f"{SEP}\n\n"
-            "Choisissez le mode d'étoiles :",
+            text,
             parse_mode="Markdown",
-            reply_markup=mines_premium_type_keyboard(),
+            reply_markup=mines_menu_keyboard(),
         )
         await track_existing_message(user.id, call.message)
-        await call.answer()
+        await call.answer("⏳ Attends encore un moment")
         return
-    else:
-        reserved, wait = reserve_signal(user.id)
-        if not reserved:
-            text = format_cooldown_message(wait)
-            await call.message.edit_text(
-                text,
-                parse_mode="Markdown",
-                reply_markup=mines_menu_keyboard(),
-            )
-            await track_existing_message(user.id, call.message)
-            await call.answer("⏳ Attends encore un moment")
-            return
 
+    if not is_premium:
         allowed, remaining = await svc.try_consume_free_signal(db_user)
         if not allowed:
             release_signal_reservation(user.id)
@@ -207,14 +211,14 @@ async def cb_mines_get_signal(call: CallbackQuery, session: AsyncSession):
             await track_existing_message(user.id, call.message)
             await call.answer("⛔ Quota gratuit épuisé")
             return
-        signal = generate_mines_signal(is_premium=False)
 
+    signal = generate_mines_signal(is_premium=is_premium, star_mode=star_mode)
     await delete_previous_signal(user.id)
     record_signal(user.id)
     await svc.save_signal(user.id, "mines", signal, is_premium=is_premium)
     await _send_mines_signal(call, signal, is_premium=is_premium)
     await call.answer("✅ Grille générée !")
-    logger.info(f"Mines get_signal for user {user.id} (premium={is_premium})")
+    logger.info(f"Mines get_signal for user {user.id} (premium={is_premium}, star_mode={star_mode})")
 
 
 @router.callback_query(F.data == "mines:signal_free")
@@ -269,12 +273,13 @@ async def cb_mines_free(call: CallbackQuery, session: AsyncSession):
         await call.answer("⛔ Quota gratuit épuisé")
         return
 
-    signal = generate_mines_signal(is_premium=False)
+    star_mode = get_star_pref(user.id)
+    signal = generate_mines_signal(is_premium=False, star_mode=star_mode)
     record_signal(user.id)
     await svc.save_signal(user.id, "mines", signal, is_premium=False)
     await _send_mines_signal(call, signal, is_premium=False, remaining=remaining)
     await call.answer("✅ Grille Mines générée !")
-    logger.info(f"Free Mines grid for user {user.id} — {signal['mines']} mines")
+    logger.info(f"Free Mines grid for user {user.id} — {signal['mines']} mines, star_mode={star_mode}")
 
 
 @router.callback_query(F.data == "mines:signal_premium")
@@ -320,7 +325,8 @@ async def cb_mines_premium(call: CallbackQuery, session: AsyncSession):
         return
 
     await delete_previous_signal(user.id)
-    signal = generate_mines_signal(is_premium=True)
+    star_mode = get_star_pref(user.id)
+    signal = generate_mines_signal(is_premium=True, star_mode=star_mode)
     await svc.consume_premium_signal(db_user)
     record_signal(user.id)
     await svc.save_signal(user.id, "mines", signal, is_premium=True)
@@ -376,7 +382,8 @@ async def cb_mines_analyse(call: CallbackQuery, session: AsyncSession):
         await call.answer("⏳ Attends encore un moment")
         return
 
-    signal = generate_mines_signal(is_premium=False)
+    star_mode = get_star_pref(call.from_user.id)
+    signal = generate_mines_signal(is_premium=False, star_mode=star_mode)
     record_signal(user.id)
     await _send_mines_signal(call, signal, is_premium=False)
     await call.answer()

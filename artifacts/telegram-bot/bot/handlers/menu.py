@@ -9,13 +9,14 @@ from bot.keyboards.main_menu import (
     guide_keyboard,
     register_keyboard,
     game_select_keyboard,
-    luckyjet_page_keyboard,
-    mines_page_keyboard,
     back_to_main_keyboard,
 )
+from bot.keyboards.luckyjet import luckyjet_reglage_keyboard
+from bot.keyboards.mines import mines_premium_type_keyboard
 from bot.services.user_service import UserService
 from bot.services.settings_service import BotSettingsService
 from bot.utils.navigation import navigate
+from bot.utils.user_prefs import get_cote_pref, get_star_pref
 from config import settings
 
 router = Router()
@@ -127,7 +128,19 @@ async def _show_luckyjet_page(
 
 @router.callback_query(F.data == "menu:luckyjet")
 async def cb_luckyjet_page(call: CallbackQuery, session: AsyncSession):
-    await _show_luckyjet_page(call, session)
+    """Sélection Lucky Jet → affiche directement l'écran de réglage (Petite/Grosse)."""
+    current = get_cote_pref(call.from_user.id)
+    photo = await _banner(session, "luckyjet_banner")
+    text = (
+        "🎯 *LUCKY JET — Réglage*\n\n"
+        f"{SEP}\n"
+        "│◉ Choisissez votre plage de coefficient :\n"
+        "│◉ Ce réglage sera appliqué à vos signaux\n"
+        f"{SEP}\n\n"
+        "👇 Sélectionnez ci-dessous :"
+    )
+    await navigate(call, text, luckyjet_reglage_keyboard(current), photo_id=photo)
+    await call.answer()
 
 
 @router.callback_query(F.data.startswith("menu:luckyjet:premium:"))
@@ -141,17 +154,18 @@ async def cb_luckyjet_premium_page(call: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "menu:mines")
 async def cb_mines_page(call: CallbackQuery, session: AsyncSession):
+    """Sélection Mines → affiche directement l'écran de réglage (Petite/Grosse étoiles)."""
+    current = get_star_pref(call.from_user.id)
     photo = await _banner(session, "mines_banner")
     text = (
-        "💣 *MINES*\n\n"
+        "💣 *MINES — Réglage*\n\n"
         f"{SEP}\n"
-        "│◉ Notre IA identifie les cases sûres\n"
-        "│◉ Grille 5×5 avec ⭐ cases recommandées\n"
-        "│◉ Évitez les 💣 mines et maximisez vos gains\n"
+        "│◉ Choisissez le nombre d'étoiles ⭐ à afficher :\n"
+        "│◉ Ce réglage s'applique à tous vos signaux Mines\n"
         f"{SEP}\n\n"
-        "▶ Appuyez sur *GET SIGNAL* pour obtenir votre grille !"
+        "👇 Sélectionnez ci-dessous :"
     )
-    await navigate(call, text, mines_page_keyboard(), photo_id=photo)
+    await navigate(call, text, mines_premium_type_keyboard(current), photo_id=photo)
     await call.answer()
 
 

@@ -33,14 +33,20 @@ def mines_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def mines_premium_type_keyboard() -> InlineKeyboardMarkup:
-    """Choix du mode d'étoiles Premium : Petite (2-5 ⭐) ou Grosse (6-10 ⭐)."""
+def mines_premium_type_keyboard(current: str = "grosse") -> InlineKeyboardMarkup:
+    """Réglage du mode d'étoiles : Petite (2–5 ⭐) ou Grosse (6–10 ⭐).
+
+    Shown immediately when the user selects Mines from the game selection.
+    The chosen mode is saved to user_prefs and used for all subsequent signals.
+    """
+    petite_label = "✅ 🌟 Petite (2–5 ⭐)" if current == "petite" else "🌟 Petite (2–5 ⭐)"
+    grosse_label = "✅ 💥 Grosse (6–10 ⭐)" if current == "grosse" else "💥 Grosse (6–10 ⭐)"
     buttons = [
         [
-            InlineKeyboardButton(text="🌟 Petite (2–5 ⭐)", callback_data="mines:signal_premium"),
-            InlineKeyboardButton(text="💥 Grosse (6–10 ⭐)", callback_data="mines:signal_premium"),
+            InlineKeyboardButton(text=petite_label, callback_data="mines:set_mode:petite"),
+            InlineKeyboardButton(text=grosse_label, callback_data="mines:set_mode:grosse"),
         ],
-        [InlineKeyboardButton(text="↩ Retour", callback_data="mines:choose_type")],
+        [InlineKeyboardButton(text="↩ Retour", callback_data="menu:game_select")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 

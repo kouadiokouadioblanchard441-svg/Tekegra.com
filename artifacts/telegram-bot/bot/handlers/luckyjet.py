@@ -478,25 +478,20 @@ async def cb_lj_reglage(call: CallbackQuery):
 
 
 @router.callback_query(F.data.startswith("lj:set_cote:"))
-async def cb_lj_set_cote(call: CallbackQuery):
-    """Enregistre le choix de plage et confirme à l'utilisateur."""
+async def cb_lj_set_cote(call: CallbackQuery, session: AsyncSession):
+    """Enregistre le réglage de cote et passe directement à la page de signal."""
     cote_type = call.data.split(":")[-1]
     if cote_type not in ("petite", "grosse"):
         await call.answer("❌ Paramètre invalide", show_alert=True)
         return
 
     set_cote_pref(call.from_user.id, cote_type)
-    label = "Petite (2X–5X)" if cote_type == "petite" else "Grosse (5X–20X)"
-    text = (
-        f"✅ *Réglage enregistré*\n\n"
-        f"{SEP}\n"
-        f"│◉ Plage choisie : *{label}*\n"
-        f"│◉ Ton prochain signal utilisera cette plage 🎯\n"
-        f"{SEP}"
-    )
-    await call.message.edit_text(
-        text,
-        parse_mode="Markdown",
-        reply_markup=luckyjet_reglage_keyboard(cote_type),
-    )
-    await call.answer(f"✅ Réglage enregistré : {label}")
+    # Aller directement à la sélection Gratuit/Premium sans mentionner la cote
+    await cb_lj_choose_type(call, session)
+
+
+@router.callback_query(F.data == "lj:signal_premium")
+async def cb_lj_signal_premium(call: CallbackQuery, session: AsyncSession):
+    """Signal Premium Lucky Jet — utilise la cote sauvegardée dans les préférences."""
+    cote_type = get_cote_pref(call.from_user.id)
+    await _send_premium_signal(call, session, cote_type)

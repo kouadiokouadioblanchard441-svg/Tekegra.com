@@ -364,7 +364,13 @@ def generate_aviator_signal(is_premium: bool = False) -> dict:
 
 # ─── Mines ────────────────────────────────────────────────────────────────────
 
-def generate_mines_signal(is_premium: bool = False) -> dict:
+def generate_mines_signal(is_premium: bool = False, star_mode: str = "grosse") -> dict:
+    """Génère un signal Mines.
+
+    star_mode:
+      - "petite" → 2–5 cases ⭐ révélées
+      - "grosse"  → 6–10 cases ⭐ révélées
+    """
     heure = _get_signal_time()
     if is_premium:
         mines_options = [1, 2, 3, 5, 10, 15]
@@ -388,7 +394,7 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
     # Probabilité théorique d'une case sûre (affichée en %)
     safe_probability = round((safe_tiles / 25) * 100)
 
-    grid = _generate_mines_grid(mines_count=mines, is_premium=is_premium)
+    grid = _generate_mines_grid(mines_count=mines, star_mode=star_mode, safe_tiles=safe_tiles)
 
     return {
         "heure": heure,
@@ -413,8 +419,13 @@ def generate_mines_signal(is_premium: bool = False) -> dict:
     }
 
 
-def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
-    """Grille 5×5 avec positions uniques, anti-clustering pour premium."""
+def _generate_mines_grid(mines_count: int, star_mode: str = "grosse", safe_tiles: int = 0, is_premium: bool = False) -> list:
+    """Grille 5×5 avec positions uniques.
+
+    Le nombre de cases ⭐ révélées dépend de star_mode :
+      - "petite" → 2 à 5 étoiles
+      - "grosse"  → 6 à 10 étoiles (plafonné au nombre de cases sûres)
+    """
     GRID = 25
     positions = list(range(GRID))
     random.shuffle(positions)
@@ -422,11 +433,15 @@ def _generate_mines_grid(mines_count: int, is_premium: bool) -> list:
     mine_positions = set(positions[:mines_count])
     safe_positions = positions[mines_count:]
 
-    # Premium : jusqu'à 5 cases révélées, gratuit : 3
-    highlight_count = min(len(safe_positions), 5 if is_premium else 3)
+    # Nombre d'étoiles selon le réglage choisi par l'utilisateur
+    if star_mode == "petite":
+        highlight_count = random.randint(2, 5)
+    else:  # grosse
+        highlight_count = random.randint(6, 10)
+    highlight_count = min(highlight_count, len(safe_positions))
 
     # Anti-clustering : on préfère des cases révélées bien espacées
-    if is_premium and len(safe_positions) >= 5:
+    if highlight_count >= 5 and len(safe_positions) >= highlight_count:
         highlighted = _spread_highlights(safe_positions, highlight_count)
     else:
         highlighted = set(safe_positions[:highlight_count])
